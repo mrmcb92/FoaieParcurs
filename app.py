@@ -1,13 +1,8 @@
 # -*- coding: utf-8 -*-
 """
 Foaie de parcurs - calcul automat km (OSRM gratuit)
-Funționalități:
- - Data foii de parcurs (un singur câmp)
- - Hartă interactivă (pydeck) cu markere + traseu
- - Opțiune „Revenire la punctul de plecare” (închidere circuit)
- - Favorite: salvare locală + hook Google Sheets (opțional)
-Geocodare robustă (LocationIQ -> Nominatim -> maps.co), UI minimalistă + dark mode auto.
-Export CSV/Excel (KM totali pe rândul 2, sub header).
+Optimizat: Rutare multi-punct (un singur request OSRM), fără sleep-uri blocante,
+gestionare erori NoRoute direct din OSRM.
 """
 
 from __future__ import annotations
@@ -16,9 +11,7 @@ from datetime import date, datetime
 from typing import List, Dict, Optional, Tuple
 
 import requests
-
 import pandas as pd
-
 
 try:
     import streamlit as st
@@ -34,13 +27,10 @@ if st is not None:
     st.markdown(
         """
         <style>
-        /* ascunderi uzuale în Streamlit */
         #MainMenu, header, footer {visibility:hidden;}
         .block-container {padding-top:.75rem; padding-bottom:5rem; max-width:980px;}
 
-        /* card standard */
         .card {
-          /* minimalist: fără contur și fără fundal pentru a elimina liniile de sub secțiuni */
           padding:.2rem 0 1rem 0;
           border: none !important;
           border-radius: 0 !important;
@@ -48,94 +38,39 @@ if st is not None:
           box-shadow: none !important;
           margin: 0 0 .6rem 0;
         }
-        /* spațiere verticală mai compactă între elementele din secțiuni */
         .card :is([data-testid="stMarkdownContainer"], [data-testid="stTextInput"], [data-testid="stSelectbox"], [data-testid="stDateInput"]) {
           margin-top: .25rem !important;
         }
         .card-title {font-weight:700; margin:0; display:inline-block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
         .muted {color:#666; font-size:.9rem}
 
-        /* elimină liniile (underline) implicite de sub titluri */
-        h1, h2, h3, h4, h5, h6 {
-          border-bottom: none !important;
-          box-shadow: none !important;
-          padding-bottom: 0 !important;
-          margin-bottom: .4rem !important;
-        }
-        /* Elimină complet decorațiile/divizoarele pe heading-urile Streamlit */
-        [data-testid="stHeading"] hr,
-        [data-testid="stHeading"] div[role="separator"],
-        [data-testid="stHeadingWithDivider"],
-        [data-testid="stMarkdownContainer"] hr,
-        .stHeadingContainer hr { display: none !important; }
+        h1, h2, h3, h4, h5, h6 { border-bottom: none !important; box-shadow: none !important; padding-bottom: 0 !important; margin-bottom: .4rem !important; }
+        [data-testid="stHeading"] hr, [data-testid="stHeading"] div[role="separator"], [data-testid="stHeadingWithDivider"], [data-testid="stMarkdownContainer"] hr, .stHeadingContainer hr { display: none !important; }
         .section { border: none !important; box-shadow: none !important; padding: 0 !important; margin: 0 0 .4rem 0 !important; font-weight: 700; }
-        /* ascunde orice <hr> orizontal */
         hr { display: none !important; }
-        /* unele versiuni Streamlit aplică linii via pseudo-elemente */
-        [data-testid="stHeader"] div:after,
-        .block-container h1:after,
-        .block-container h2:after,
-        .block-container h3:after,
-        .block-container h4:after,
-        .block-container h5:after,
-        .block-container h6:after {
-          content: none !important;
-          border: none !important;
-        }
+        [data-testid="stHeader"] div:after, .block-container h1:after, .block-container h2:after, .block-container h3:after, .block-container h4:after, .block-container h5:after, .block-container h6:after { content: none !important; border: none !important; }
 
-        /* inputuri & selecturi îngrijite */
         input, textarea, .stSelectbox div[role="button"], .stSelectbox input {min-height:44px;}
-        .stTextInput>div>div, .stSelectbox>div>div {
-          border-radius:10px!important;
-          border:1px solid var(--border,#e6e6e6)!important;
-        }
+        .stTextInput>div>div, .stSelectbox>div>div { border-radius:10px!important; border:1px solid var(--border,#e6e6e6)!important; }
 
+        .op-row-marker + div [data-testid="stHorizontalBlock"]{ display: grid !important; grid-template-columns: 1fr auto !important; align-items: center !important; gap: .2rem !important; }
+        .op-row-marker + div [data-testid="column"]{ width: auto !important; min-width: 0 !important; padding: 0 !important; }
+        .op-row-marker + div [data-testid="column"]:first-child{ justify-content: flex-start !important; align-items: center !important; }
+        .op-row-marker + div [data-testid="column"]:last-child{ justify-content: flex-end !important; align-items: center !important; }
+        .op-row-marker + div .stButton>button{ border-radius:999px!important; width:24px!important; height:24px!important; min-height:24px!important; padding:0!important; line-height:1!important; font-size:14px!important; margin:0!important; }
 
-        /* Titlu + buton (ștergere) pe un singur rând: grid 1fr auto */
-        .op-row-marker + div [data-testid="stHorizontalBlock"]{
-          display: grid !important;
-          grid-template-columns: 1fr auto !important; /* titlu | acțiune */
-          align-items: center !important;
-          gap: .2rem !important;
-        }
-        .op-row-marker + div [data-testid="column"]{
-          width: auto !important; min-width: 0 !important; padding: 0 !important;
-        }
-        .op-row-marker + div [data-testid="column"]:first-child{ /* titlu */
-          justify-content: flex-start !important; align-items: center !important;
-        }
-        .op-row-marker + div [data-testid="column"]:last-child{ /* acțiune */
-          justify-content: flex-end !important; align-items: center !important;
-        }
-        /* Buton mic, rotund */
-        .op-row-marker + div .stButton>button{
-          border-radius:999px!important; width:24px!important; height:24px!important; min-height:24px!important;
-          padding:0!important; line-height:1!important; font-size:14px!important;
-          margin:0!important;
-        }
-        /* butoane mici pentru acțiuni (duplică/șterge) */
-        .op-row-marker + div .stButton>button{
-          width:24px!important; height:24px!important; min-height:24px!important; border-radius:999px!important;
-          padding:0!important; line-height:1!important; font-size:14px!important; margin:0!important;
-        }
         @media (max-width: 480px){
           .block-container{padding-left:.5rem; padding-right:.5rem;}
           .op-row-marker + div [data-testid="stHorizontalBlock"]{ gap:.12rem!important; }
           .op-row-marker + div .stButton>button{ width:22px!important; height:22px!important; min-height:22px!important; font-size:13px!important; }
-          .op-row-marker + div .stButton>button{ width:22px!important; height:22px!important; min-height:22px!important; font-size:13px!important; }
         }
 
-        /* Dark mode auto */
         @media (prefers-color-scheme: dark){
           :root{--bg:#0e1117;--fg:#e6e6e6;--card:#161a23;--muted:#a3a3a3;--border:#2b3040;}
           body{color:var(--fg); background:var(--bg);}
           .card{background:var(--card); border-color:var(--border); box-shadow:none;}
-          .stTextInput input,.stSelectbox div[role="button"],.stSelectbox input{
-            background:var(--card)!important;color:var(--fg)!important;border-radius:10px;
-          }
-          ul[role="listbox"]{
-            background:var(--card)!important;color:var(--fg)!important;border:1px solid var(--border)!important;
-          }
+          .stTextInput input,.stSelectbox div[role="button"],.stSelectbox input{ background:var(--card)!important;color:var(--fg)!important;border-radius:10px; }
+          ul[role="listbox"]{ background:var(--card)!important;color:var(--fg)!important;border:1px solid var(--border)!important; }
         }
         </style>
         """,
@@ -148,12 +83,6 @@ NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
 MAPSCO_URL    = "https://geocode.maps.co/search"
 LOCATIONIQ_URL = "https://us1.locationiq.com/v1/search"
 
-# OSRM cu geometrie pentru trasarea pe hartă
-OSRM_ROUTE_URL = (
-    "https://router.project-osrm.org/route/v1/driving/"
-    "{lon1},{lat1};{lon2},{lat2}?overview=full&alternatives=false&steps=false&geometries=geojson"
-)
-
 def _secret(name: str, default: str = "") -> str:
     if st is None: return default
     try: return (st.secrets.get(name, default) or default).strip()
@@ -162,19 +91,15 @@ def _secret(name: str, default: str = "") -> str:
 CONTACT_EMAIL  = _secret("CONTACT_EMAIL", "")
 LOCATIONIQ_KEY = _secret("LOCATIONIQ_TOKEN", "") or _secret("LOCATIONIQ_KEY", "")
 
-# Google Sheets hook (opțional) – pentru favorite
-GSPREAD_SERVICE_ACCOUNT_JSON = _secret("GSPREAD_SERVICE_ACCOUNT_JSON", "")  # conținut JSON de Service Account (string)
-GOOGLE_SHEET_ID = _secret("GOOGLE_SHEET_ID", "")  # ID-ul foii (nu URL-ul), ex: 1AbC...
+GSPREAD_SERVICE_ACCOUNT_JSON = _secret("GSPREAD_SERVICE_ACCOUNT_JSON", "")
+GOOGLE_SHEET_ID = _secret("GOOGLE_SHEET_ID", "")
 
-USER_AGENT = f"FoaieParcursApp/6.4 ({'mailto:'+CONTACT_EMAIL if CONTACT_EMAIL else 'no-contact'})"
+USER_AGENT = f"FoaieParcursApp/6.5 ({'mailto:'+CONTACT_EMAIL if CONTACT_EMAIL else 'no-contact'})"
 RATE_LIMIT_SECONDS = 1.0
-DEBOUNCE_MS = 350
 CACHE_FILE = os.path.expanduser("~/.foaieparcurs_cache.json")
 FAV_FILE   = os.path.expanduser("~/.foaieparcurs_fav.json")
-
-# --- Route cache config ---
 ROUTE_CACHE_FILE = os.path.expanduser("~/.foaieparcurs_routes.json")
-PATH_SUBSAMPLE_STEP = 3  # păstrăm fiecare al 3-lea punct din geometrie pentru hartă
+PATH_SUBSAMPLE_STEP = 3
 
 # ---------------- Cache pe disc ----------------
 def _load_json(path: str) -> dict:
@@ -196,10 +121,6 @@ _ROUTE_DISK = _load_json(ROUTE_CACHE_FILE)
 def _round5(x: float) -> float:
     return float(f"{x:.5f}")
 
-def _route_key(lat1: float, lon1: float, lat2: float, lon2: float) -> str:
-    return f"{_round5(lat1)},{_round5(lon1)}->{_round5(lat2)},{_round5(lon2)}"
-
-# ---------------- Utilitare ----------------
 def km_round(x: float, decimals: int = 1) -> float:
     pow10 = 10 ** decimals
     return math.floor(x * pow10 + 0.5) / pow10
@@ -213,7 +134,7 @@ def _respect_rate_limit(tag: str) -> None:
         time.sleep(RATE_LIMIT_SECONDS - (now - last))
     st.session_state[key] = time.time()
 
-# ---------------- Geocodare (LocationIQ -> Nominatim -> maps.co) ----------------
+# ---------------- Geocodare ----------------
 if st is not None:
     @st.cache_data(ttl=24*3600, show_spinner=False)
     def _locationiq_cached(q: str, limit: int, key: str) -> List[Dict]:
@@ -306,81 +227,95 @@ def geocode_candidates(q: str, limit: int = 6) -> List[Dict]:
         st.session_state["_geocode_error"] = "Geocodarea nu este disponibilă momentan. Provideri încercați: " + last_err
     return []
 
-# ---------------- Rutare OSRM (cu geometrie) ----------------
+# ---------------- Rutare OSRM (Multi-Punct) ----------------
+def _route_key_multi(pts_coords: List[Tuple[float, float]]) -> str:
+    return "|".join([f"{_round5(lat)},{_round5(lon)}" for lat, lon in pts_coords])
+
 if st is not None:
     @st.cache_data(ttl=24*3600, show_spinner=False)
-    def _route_osrm_cached(lat1: float, lon1: float, lat2: float, lon2: float) -> Optional[Dict]:
-        url = OSRM_ROUTE_URL.format(lon1=lon1, lat1=lat1, lon2=lon2, lat2=lat2)
+    def _route_osrm_multi_cached(pts_coords: List[Tuple[float, float]]) -> Optional[Dict]:
+        coord_str = ";".join([f"{lon},{lat}" for lat, lon in pts_coords])
+        url = f"https://router.project-osrm.org/route/v1/driving/{coord_str}?overview=full&alternatives=false&steps=false&geometries=geojson"
+        
         r = requests.get(url, headers={"User-Agent": USER_AGENT}, timeout=20)
+        
+        # Procesăm explicit erorile returnate de OSRM (ex. NoRoute)
+        if r.status_code == 400:
+            data = r.json()
+            if data.get("code") == "NoRoute":
+                return {"error": "Nu s-a găsit un traseu auto între aceste puncte pe hartă."}
+            return {"error": f"Eroare OSRM: {data.get('code', 'Necunoscută')}"}
+            
         r.raise_for_status()
         data = r.json()
+
         routes = data.get("routes") or []
         if not routes: return None
+
         route = routes[0]
-        km = route["distance"] / 1000.0
+        legs = route.get("legs", [])
+        legs_km = [leg["distance"] / 1000.0 for leg in legs]
+
         geom = route.get("geometry", {})
         coords = []
         if geom and geom.get("type") == "LineString":
-            coords = geom.get("coordinates") or []  # [ [lon,lat], ... ]
-        return {"km": km, "coords": coords}
+            coords = geom.get("coordinates") or []
+            
+        return {"legs_km": legs_km, "coords": coords}
 else:
-    def _route_osrm_cached(lat1, lon1, lat2, lon2): return None
+    def _route_osrm_multi_cached(pts_coords): return None
 
-def route_osrm(lat1: float, lon1: float, lat2: float, lon2: float) -> Optional[Dict]:
+def route_osrm_multi(pts_coords: List[Tuple[float, float]]) -> Optional[Dict]:
     if st is not None:
         _respect_rate_limit("route")
     try:
-        k = _route_key(float(lat1), float(lon1), float(lat2), float(lon2))
+        k = _route_key_multi(pts_coords)
         if k in _ROUTE_DISK:
             return _ROUTE_DISK[k]
-        res = _route_osrm_cached(float(lat1), float(lon1), float(lat2), float(lon2))
+        
+        res = _route_osrm_multi_cached(pts_coords)
+        
         if res is not None:
-            if res.get("coords"):
-                res = {**res, "coords": _simplify_coords(res["coords"], PATH_SUBSAMPLE_STEP)}
+            if not res.get("error") and res.get("coords"):
+                res["coords"] = _simplify_coords(res["coords"], PATH_SUBSAMPLE_STEP)
             _ROUTE_DISK[k] = res
             _save_json(ROUTE_CACHE_FILE, _ROUTE_DISK)
         return res
-    except Exception:
-        return None
+    except Exception as e:
+        return {"error": f"Eroare de rețea la calculul rutei: {e}"}
 
-def route_osrm_retry(lat1: float, lon1: float, lat2: float, lon2: float, tries: int = 2) -> Optional[Dict]:
-    """Mic retry pentru hipo de rețea/serviciu."""
+def route_osrm_multi_retry(pts_coords: List[Tuple[float, float]], tries: int = 2) -> Optional[Dict]:
     res = None
     for _ in range(max(1, tries)):
-        res = route_osrm(lat1, lon1, lat2, lon2)
-        if res:
+        res = route_osrm_multi(pts_coords)
+        if res and "error" not in res:
+            return res
+        if res and "error" in res and "Nu s-a găsit" in res["error"]:
             return res
         time.sleep(0.3)
     return res
 
-# --- Simplifier for route coordinates ---
 def _simplify_coords(coords: List[List[float]], step: int = PATH_SUBSAMPLE_STEP) -> List[List[float]]:
     if not coords or step <= 1:
         return coords
     out = coords[::max(1, int(step))]
-    # asigurăm că ultimul punct rămâne inclus
     if out and coords[-1] != out[-1]:
         out.append(coords[-1])
     return out
 
 # ---------------- Favorite (local + Google Sheets hook) ----------------
-def _fav_local_all() -> Dict[str, Dict]:
-    return dict(_FAV_LOCAL)
-
+def _fav_local_all() -> Dict[str, Dict]: return dict(_FAV_LOCAL)
 def _fav_local_save(name: str, payload: Dict) -> None:
     _FAV_LOCAL[name] = payload
     _save_json(FAV_FILE, _FAV_LOCAL)
-
 def _fav_local_delete(name: str) -> None:
     if name in _FAV_LOCAL:
         _FAV_LOCAL.pop(name, None)
         _save_json(FAV_FILE, _FAV_LOCAL)
 
-def _fav_sheet_available() -> bool:
-    return bool(GSPREAD_SERVICE_ACCOUNT_JSON and GOOGLE_SHEET_ID)
+def _fav_sheet_available() -> bool: return bool(GSPREAD_SERVICE_ACCOUNT_JSON and GOOGLE_SHEET_ID)
 
 def _fav_sheet_append(payload: Dict) -> bool:
-    """Scrie în Google Sheet (worksheet 'favorites'): date,name,start,stops(json)"""
     if not _fav_sheet_available(): return False
     try:
         import gspread
@@ -390,21 +325,14 @@ def _fav_sheet_append(payload: Dict) -> bool:
         creds = Credentials.from_service_account_info(sa_info, scopes=scopes)
         gc = gspread.authorize(creds)
         sh = gc.open_by_key(GOOGLE_SHEET_ID)
-        try:
-            ws = sh.worksheet("favorites")
+        try: ws = sh.worksheet("favorites")
         except gspread.WorksheetNotFound:
             ws = sh.add_worksheet(title="favorites", rows=1000, cols=4)
             ws.append_row(["date", "name", "start", "stops_json"])
-        row = [
-            datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
-            payload.get("name",""),
-            payload.get("start",""),
-            json.dumps(payload.get("stops", []), ensure_ascii=False),
-        ]
+        row = [ datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"), payload.get("name",""), payload.get("start",""), json.dumps(payload.get("stops", []), ensure_ascii=False) ]
         ws.append_row(row)
         return True
-    except Exception:
-        return False
+    except Exception: return False
 
 def _fav_payload_from_state() -> Dict:
     start_txt = st.session_state.get("txt_start") or st.session_state.get("start") or ""
@@ -414,15 +342,12 @@ def _fav_payload_from_state() -> Dict:
     return {"name": "", "start": start_txt, "stops": stops_txt}
 
 def _fav_apply_to_state(payload: Dict) -> None:
-    """Aplică favorite în UI: suprascrie start + lista de opriri (text)."""
     st.session_state["txt_start"] = payload.get("start","")
-    # resetăm opririle
     st.session_state["stops_keys"] = []
     for i, stop_txt in enumerate(payload.get("stops", [])):
         key = f"stop_{i}"
         st.session_state["stops_keys"].append(key)
         st.session_state[f"txt_{key}"] = stop_txt
-        # curățăm candidați pentru a forța re-geocodare
         for suf in ("_cands","_sel","_lat","_lon","_display","_last_fetch_ts","_query"):
             st.session_state.pop(f"{key}{suf}", None)
 
@@ -438,9 +363,9 @@ def _refresh_candidates_if_due(key: str) -> None:
     if st is None: return
     q = (st.session_state.get(f"txt_{key}") or "").strip()
     last_q = (st.session_state.get(f"{key}_query") or "").strip()
+    
+    # Eliminat time.sleep(). Evenimentele input sunt native via onBlur sau Enter.
     if q and q != last_q and len(q) >= 3:
-        time.sleep(DEBOUNCE_MS / 1000.0)
-        if (st.session_state.get(f"txt_{key}") or "").strip() != q: return
         st.session_state.pop("_geocode_error", None)
         cands = geocode_candidates(q, limit=6)
         st.session_state[f"{key}_cands"] = cands
@@ -448,23 +373,15 @@ def _refresh_candidates_if_due(key: str) -> None:
         st.session_state[f"{key}_sel"] = 0
         st.session_state[f"{key}_last_fetch_ts"] = time.time()
 
-
 def _move_stop(old_idx: int, new_idx: int) -> None:
     keys = st.session_state.get("stops_keys", [])
     if 0 <= old_idx < len(keys) and 0 <= new_idx < len(keys):
         keys.insert(new_idx, keys.pop(old_idx))
 
-
-def _reorder_stops_simple() -> None:
-    """No-op: reordonarea se face direct cu butoane ↑/↓ la fiecare oprire."""
-    pass
-
-
 def _render_address_row(label: str, key: str, index: int, total: int) -> None:
     if st is None: return
     st.markdown("<div class='card'>", unsafe_allow_html=True)
 
-    # Titlu + butoane duplică/șterge pe același rând (fără reordonare)
     st.markdown("<div class='op-row-marker'></div>", unsafe_allow_html=True)
     ctitle, cactions = st.columns([0.85, 0.15])
     with ctitle:
@@ -502,13 +419,11 @@ def _render_address_row(label: str, key: str, index: int, total: int) -> None:
     else:
         err = st.session_state.get("_geocode_error")
         if err: cont.warning(err)
-        else: cont.caption("<span class='muted'>Tastează minim 3 caractere pentru sugestii.</span>", unsafe_allow_html=True)
+        else: cont.caption("<span class='muted'>Tastează minim 3 caractere și apasă Enter pentru sugestii.</span>", unsafe_allow_html=True)
 
     st.markdown("</div>", unsafe_allow_html=True)
 
 def _collect_point_from_state(key: str) -> Optional[Dict]:
-    """Întoarce {'lat','lon','display'} pentru 'start' sau 'stop_X'.
-    Dacă lat/lon lipsesc, încearcă geocodare pe textul curent (prima potrivire)."""
     txt = (st.session_state.get(f"txt_{key}") or st.session_state.get(key) or "").strip()
     lat = st.session_state.get(f"{key}_lat")
     lon = st.session_state.get(f"{key}_lon")
@@ -531,9 +446,7 @@ def _collect_point_from_state(key: str) -> Optional[Dict]:
 
 # ---------------- Hartă (pydeck) ----------------
 def _fit_view(points: List[Tuple[float,float]]) -> Tuple[float,float,float]:
-    """Returnează (lat, lon, zoom) aproximativ, pe baza bounding box-ului."""
-    if not points:
-        return (44.43, 26.10, 9)  # București fallback
+    if not points: return (44.43, 26.10, 9)
     lats = [p[0] for p in points]; lons = [p[1] for p in points]
     lat_center = (min(lats)+max(lats))/2.0
     lon_center = (min(lons)+max(lons))/2.0
@@ -550,41 +463,34 @@ def _fit_view(points: List[Tuple[float,float]]) -> Tuple[float,float,float]:
     return (lat_center, lon_center, zoom)
 
 def _render_map(all_points: List[Dict], all_paths: List[List[List[float]]]) -> None:
-    """Harta cu markere și traseu: linie colorată/groasă pentru vizibilitate pe dark mode."""
     try:
         import pydeck as pdk
     except Exception:
         st.info("Instalează `pydeck` pentru hartă interactivă (pip install pydeck).")
         return
 
-    # Marker-ele (lon, lat)
     scatter_data = [{"position": [p["lon"], p["lat"]], "label": p["display"]} for p in all_points]
-
-    # Traseele (lista de coordonate [lon, lat])
     path_data = [{"path": coords} for coords in all_paths if coords and len(coords) >= 2]
-
-    # View automată pe toate punctele
+    
     latlon_points = [(p["lat"], p["lon"]) for p in all_points]
     clat, clon, zoom = _fit_view(latlon_points)
 
-    # Markere (vizibile și pe dark)
     scatter = pdk.Layer(
         "ScatterplotLayer",
         data=scatter_data,
         get_position="position",
         get_radius=80,
-        get_fill_color=[255, 99, 71],  # roșu cald
+        get_fill_color=[255, 99, 71],
         pickable=True,
         auto_highlight=True,
     )
 
-    # Linia traseului — CULOARE + LĂȚIME clare
     path = pdk.Layer(
         "PathLayer",
         data=path_data,
         get_path="path",
-        get_color=[0, 122, 255],       # albastru vizibil pe dark
-        get_width=4,                   # grosimea în pixeli
+        get_color=[0, 122, 255],
+        get_width=4,
         width_min_pixels=2,
     )
 
@@ -603,14 +509,12 @@ def run_streamlit_app() -> None:
     if src_badge:
         st.markdown(f"<span class='muted'>Sursă geocodare curentă: <b>{src_badge}</b></span>", unsafe_allow_html=True)
 
-    # Data foiii — CARD minimalist
     st.markdown("<h4 class='section'>🗓️ Data foii</h4>", unsafe_allow_html=True)
     st.markdown("<div class='card'>", unsafe_allow_html=True)
     st.session_state.setdefault("calc_date", date.today())
     st.session_state["calc_date"] = st.date_input("Alege data foii", value=st.session_state["calc_date"]) 
     st.markdown("</div>", unsafe_allow_html=True)
 
-    # FAVORITE (ascuns sub buton) — plasat sub secțiunea Data foii
     with st.expander("⭐ Favorite", expanded=False):
         st.markdown("<div class='card'>", unsafe_allow_html=True)
         fav_col1, fav_col2 = st.columns([0.7, 0.3])
@@ -642,11 +546,9 @@ def run_streamlit_app() -> None:
                 st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)
 
-    # TRASEU — totul într-un singur card logic: start, opriri, acțiuni, opțiuni, buton calculează
     st.markdown("<h4 class='section'>🧭 Traseu</h4>", unsafe_allow_html=True)
     st.markdown("<div class='card'>", unsafe_allow_html=True)
 
-    # Punct de plecare
     st.markdown("**📍 Punct de plecare**")
     _init_addr_state("start", "Piata Unirii, Bucuresti")
     cont = st.container()
@@ -667,18 +569,14 @@ def run_streamlit_app() -> None:
     else:
         err = st.session_state.get("_geocode_error")
         if err: cont.warning(err)
-        else: cont.caption("<span class='muted'>Tastează minim 3 caractere pentru sugestii.</span>", unsafe_allow_html=True)
+        else: cont.caption("<span class='muted'>Tastează minim 3 caractere și apasă Enter pentru sugestii.</span>", unsafe_allow_html=True)
 
-
-    # Opriri
     st.markdown("**🛑 Opriri**")
     if "stops_keys" not in st.session_state:
         st.session_state.stops_keys = ["stop_0"]
         _init_addr_state("stop_0", "")
 
-    # Adăugare multiplă (expander) — deasupra primei opriri
     with st.expander("➕ Adaugă mai multe opriri deodată"):
-        # inițializăm / golim în siguranță valoarea înainte de a instanția widgetul
         st.session_state.setdefault("bulk_add_text", "")
         if st.session_state.get("_bulk_clear", False):
             st.session_state["bulk_add_text"] = ""
@@ -687,27 +585,21 @@ def run_streamlit_app() -> None:
         if st.button("Adaugă aceste opriri", key="bulk_add_btn"):
             lines = [ln.strip() for ln in (bulk_txt or "").splitlines()]
             lines = [ln for ln in lines if ln]
-            # 1) completează întâi opririle deja existente care sunt goale
             empty_keys = [
                 k for k in st.session_state.get("stops_keys", [])
                 if not (st.session_state.get(f"txt_{k}") or st.session_state.get(k) or "").strip()
             ]
             i = 0
             for k in empty_keys:
-                if i >= len(lines):
-                    break
+                if i >= len(lines): break
                 ln = lines[i]; i += 1
-                # setăm textul pentru oprirea goală înainte de instanțierea widgetului (la rerun)
                 st.session_state[f"txt_{k}"] = ln
-                # curățăm candidații pentru a forța geocodarea fresh
                 for suf in ("_cands","_sel","_lat","_lon","_display","_last_fetch_ts","_query"):
                     st.session_state.pop(f"{k}{suf}", None)
-            # 2) dacă mai rămân adrese, le adăugăm ca opriri noi
             for ln in lines[i:]:
                 new_key = f"stop_{len(st.session_state.stops_keys)}"
                 st.session_state.stops_keys.append(new_key)
                 _init_addr_state(new_key, ln)
-            # golim textarea în siguranță la următorul rerun
             st.session_state["_bulk_clear"] = True
             st.rerun()
 
@@ -716,7 +608,6 @@ def run_streamlit_app() -> None:
         _init_addr_state(key)
         _render_address_row("Adresă", key, idx, len(st.session_state.stops_keys))
 
-    # Acțiuni pentru opriri: adaugă / șterge toate (cu confirmare)
     act1, act2 = st.columns([0.5, 0.5])
     with act1:
         if st.button("➕ Adăugare oprire", key="add_stop_btn", use_container_width=True):
@@ -731,13 +622,10 @@ def run_streamlit_app() -> None:
             st.session_state["_to_remove"] = list(st.session_state.stops_keys)
             st.session_state["confirm_rm_all"] = False
 
-
-    # Opțiuni traseu
     st.markdown("**⚙️ Opțiuni traseu**")
     close_loop = st.checkbox("Revenire la punctul de plecare (închidere circuit)")
     st.session_state["close_loop"] = bool(close_loop)
 
-    # Aplicăm ștergerile (după acțiuni)
     remove_list = st.session_state.pop("_to_remove", [])
     if remove_list:
         for k in remove_list:
@@ -748,58 +636,67 @@ def run_streamlit_app() -> None:
             st.session_state.pop(f"txt_{k}", None)
         st.rerun()
 
-    # Butonul principal — la finalul cardului de traseu, logic după opțiuni
+    # Optimizare calcul rută prin request unic OSRM
     if st.button("Calculează traseul", key="calc_btn", use_container_width=True):
         issues: List[str] = []
         pts: List[Dict] = []
-        # start cu fallback
+        
         start_pt = _collect_point_from_state("start")
-        if start_pt:
-            pts.append(start_pt)
-        else:
-            issues.append("Punctul de plecare nu a putut fi geocodat. Alege o variantă din listă sau reformulează.")
-        # opriri cu fallback
+        if start_pt: pts.append(start_pt)
+        else: issues.append("Punctul de plecare nu a putut fi geocodat.")
+        
         for key in st.session_state.get("stops_keys", []):
             p = _collect_point_from_state(key)
-            if p:
-                pts.append(p)
+            if p: pts.append(p)
             else:
                 txt = (st.session_state.get(f"txt_{key}") or "").strip()
                 issues.append(f"Oprirea „{txt or key}” nu a putut fi geocodată.")
+                
         if issues:
-            for msg in issues:
-                st.warning(msg)
+            for msg in issues: st.warning(msg)
+            
         if len(pts) < 2:
             st.error("Adaugă minim o oprire validă.")
         else:
-            segments = []
-            path_coords_all = []
-            for i in range(len(pts) - 1):
-                a, b = pts[i], pts[i + 1]
-                res = route_osrm_retry(a["lat"], a["lon"], b["lat"], b["lon"]) or {}
-                km = km_round(float(res.get("km", 0.0)), 1)
-                segments.append({"from": a["display"], "to": b["display"], "km_oneway": km})
-                coords = res.get("coords") or []
-                if coords:
-                    path_coords_all.append(_simplify_coords(coords, PATH_SUBSAMPLE_STEP))
-            if st.session_state.get("close_loop") and len(pts) >= 2:
-                a, b = pts[-1], pts[0]
-                res = route_osrm_retry(a["lat"], a["lon"], b["lat"], b["lon"]) or {}
-                km = km_round(float(res.get("km", 0.0)), 1)
-                segments.append({"from": a["display"], "to": b["display"], "km_oneway": km})
-                coords = res.get("coords") or []
-                if coords:
-                    path_coords_all.append(_simplify_coords(coords, PATH_SUBSAMPLE_STEP))
-            st.session_state["segments"] = segments
-            st.session_state["paths"] = path_coords_all
-            if any(seg["km_oneway"] == 0 for seg in segments):
-                st.info("Unele segmente au ieșit 0 km. Poate OSRM n-a avut drum; încearcă reformularea adreselor.")
-            st.success("Traseul a fost recalculat. Poți bifa dus-întors, vizualiza harta și exporta.")
+            if st.session_state.get("close_loop"):
+                pts.append(pts[0])
+                
+            pts_coords = [(p["lat"], p["lon"]) for p in pts]
+            
+            # Cerem ruta integrală dintr-un foc
+            res = route_osrm_multi_retry(pts_coords)
+            
+            if not res:
+                st.error("Eroare neașteptată la calcularea rutei (fără răspuns de la server).")
+            elif "error" in res:
+                st.error(res["error"])
+            else:
+                legs_km = res.get("legs_km", [])
+                coords = res.get("coords", [])
+                
+                if len(legs_km) == len(pts) - 1:
+                    segments = []
+                    path_coords_all = []
+                    
+                    for i in range(len(pts) - 1):
+                        a, b = pts[i], pts[i + 1]
+                        km = km_round(float(legs_km[i]), 1)
+                        segments.append({"from": a["display"], "to": b["display"], "km_oneway": km})
+                        
+                    if coords:
+                        path_coords_all.append(coords) # linia continuă pe hartă
+                        
+                    st.session_state["segments"] = segments
+                    st.session_state["paths"] = path_coords_all
+                    
+                    if any(seg["km_oneway"] == 0 for seg in segments):
+                        st.info("Atenție: Unele segmente au 0 km. Punctele ar putea fi prea apropiate sau identice.")
+                    st.success("Traseul a fost calculat. Poți bifa multiplicatorii mai jos.")
+                else:
+                    st.error("Răspuns invalid de la serviciul de hărți (numărul de segmente nu corespunde).")
 
-    st.markdown("</div>", unsafe_allow_html=True)  # end card Traseu
+    st.markdown("</div>", unsafe_allow_html=True)
 
-
-    # Segmente + hartă + export
     if st.session_state.get("segments"):
         st.markdown("<h4 class='section'>🧭 Segmente</h4>", unsafe_allow_html=True)
         segments = st.session_state["segments"]
@@ -809,9 +706,7 @@ def run_streamlit_app() -> None:
         points_for_map: List[Dict] = []
 
         if st.session_state.get("start_lat") and st.session_state.get("start_lon"):
-            points_for_map.append({"lat": float(st.session_state["start_lat"]),
-                                   "lon": float(st.session_state["start_lon"]),
-                                   "display": st.session_state.get("start") or "Start"})
+            points_for_map.append({"lat": float(st.session_state["start_lat"]), "lon": float(st.session_state["start_lon"]), "display": st.session_state.get("start") or "Start"})
         for key in st.session_state.get("stops_keys", []):
             lat, lon = st.session_state.get(f"{key}_lat"), st.session_state.get(f"{key}_lon")
             disp = st.session_state.get(f"{key}_display") or st.session_state.get(key)
@@ -824,102 +719,53 @@ def run_streamlit_app() -> None:
                 st.markdown(f"• <b>{seg['from']}</b> → <b>{seg['to']}</b>", unsafe_allow_html=True)
             with c2:
                 checked = st.checkbox("dus-întors", key=f"seg_rt_{i}", value=st.session_state.get(f"seg_rt_{i}", False))
-                reps = st.number_input(
-                    "×", min_value=1, max_value=50, step=1,
-                    key=f"seg_rep_{i}", value=st.session_state.get(f"seg_rep_{i}", 1)
-                )
+                reps = st.number_input("×", min_value=1, max_value=50, step=1, key=f"seg_rep_{i}", value=st.session_state.get(f"seg_rep_{i}", 1))
             effective = seg["km_oneway"] * (2 if checked else 1) * int(reps)
             total += effective
-            st.markdown(
-                f"<span class='muted'>Distanță (×{int(reps)}): <b>{effective} km</b></span>",
-                unsafe_allow_html=True,
-            )
-            rows.append({
-                "Data": data_foaie.strftime("%d.%m.%Y"),
-                "Plecare": seg["from"],
-                "Destinație": seg["to"],
-                "Dus-întors": "Da" if checked else "Nu",
-                "Înmulțiri (×)": int(reps),
-                "Km parcurși": effective,
-            })
-
+            st.markdown(f"<span class='muted'>Distanță (×{int(reps)}): <b>{effective} km</b></span>", unsafe_allow_html=True)
+            rows.append({ "Data": data_foaie.strftime("%d.%m.%Y"), "Plecare": seg["from"], "Destinație": seg["to"], "Dus-întors": "Da" if checked else "Nu", "Înmulțiri (×)": int(reps), "Km parcurși": effective })
 
         st.success(f"Total km: {total}")
 
-        # Hartă interactivă (traseu evidențiat)
         st.markdown("<h4 class='section'>🗺️ Hartă traseu</h4>", unsafe_allow_html=True)
         _render_map(points_for_map, st.session_state.get("paths", []))
 
-        # Tabel + export
         df = pd.DataFrame(rows)
         st.dataframe(df, use_container_width=True)
 
-        # Export CSV
         csv_bytes = df.to_csv(index=False).encode("utf-8-sig")
-        st.download_button(
-            "⬇️ Descarcă CSV",
-            csv_bytes,
-            file_name=f"foaie_parcurs_{data_foaie.strftime('%Y%m%d')}.csv",
-            mime="text/csv",
-            use_container_width=True,
-        )
+        st.download_button("⬇️ Descarcă CSV", csv_bytes, file_name=f"foaie_parcurs_{data_foaie.strftime('%Y%m%d')}.csv", mime="text/csv", use_container_width=True)
 
-        # Export Excel (Header pe rândul 1 - înghețat, "KM totali" pe rândul 2, datele de la rândul 2)
         bio = io.BytesIO()
         try:
             from openpyxl.styles import Font
             with pd.ExcelWriter(bio, engine="openpyxl") as writer:
-                # scriem DOAR datele, fără header, începând cu rândul 2 (startrow=1 pentru că e 0-based)
                 df.to_excel(writer, index=False, header=False, sheet_name="Foaie de parcurs", startrow=1)
                 ws = writer.sheets["Foaie de parcurs"]
-
-                # rândul 1: headerele coloanelor
-                for col_idx, col_name in enumerate(df.columns, 1):
-                    ws.cell(row=1, column=col_idx, value=col_name).font = Font(bold=True)
-
-                # coloana pentru total = următoarea după ultimele coloane ale datelor
-                tot_col = df.shape[1] + 1  # ex: dacă df are 6 coloane (A..F), totalul merge pe G
+                for col_idx, col_name in enumerate(df.columns, 1): ws.cell(row=1, column=col_idx, value=col_name).font = Font(bold=True)
+                tot_col = df.shape[1] + 1
                 ws.cell(row=1, column=tot_col, value="KM totali").font = Font(bold=True)
                 ws.cell(row=2, column=tot_col, value=float(total)).font = Font(bold=True)
-
-                # format numeric pe coloana de total
                 try:
                     from openpyxl.utils import get_column_letter
                     col_letter = get_column_letter(tot_col)
                     ws.column_dimensions[col_letter].width = 15
-                    from openpyxl.styles import numbers
                     ws.cell(row=2, column=tot_col).number_format = "0.0"
-                except Exception:
-                    pass
-
-                # înghețăm doar primul rând (header); rândul 2 (total) e scrollabil
+                except Exception: pass
                 ws.freeze_panes = "A2"
-
             bio.seek(0)
-            st.download_button(
-                "⬇️ Descarcă Excel",
-                bio.getvalue(),
-                file_name=f"foaie_parcurs_{data_foaie.strftime('%Y%m%d')}.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                use_container_width=True,
-            )
+            st.download_button("⬇️ Descarcă Excel", bio.getvalue(), file_name=f"foaie_parcurs_{data_foaie.strftime('%Y%m%d')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
         except Exception as ex:
             st.warning("Nu am putut genera Excel. Verifică `openpyxl`. Detalii:")
             st.exception(ex)
             st.info("CSV rămâne disponibil.")
 
-# ---------------- Teste minime ----------------
 def _run_basic_tests() -> None:
     assert km_round(12.34, 1) == 12.3
     assert km_round(12.35, 1) in (12.3, 12.4)
     df = pd.DataFrame([{"Data":"01.01.2025","Plecare":"A","Destinație":"B","Dus-întors":"Nu","Înmulțiri (×)":2,"Km parcurși":24.6}])
     assert list(df.columns)==["Data","Plecare","Destinație","Dus-întors","Înmulțiri (×)","Km parcurși"]
-    # test simplu pentru bulk-add: ignora linii goale și spații
-    lines = [ln.strip() for ln in "\nA\n\n B "+"\n".splitlines()]
-    lines = [ln for ln in lines if ln]
-    assert lines == ["A", "B"]
 
-# ---------------- Main ----------------
 if __name__ == "__main__":
     if "--test" in sys.argv:
         _run_basic_tests(); print("OK"); sys.exit(0)
