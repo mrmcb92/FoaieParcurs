@@ -532,10 +532,11 @@ def run_streamlit_app() -> None:
                 saved_remote = False
                 if _fav_sheet_available():
                     saved_remote = _fav_sheet_append(payload)
+                name = payload["name"]
                 if saved_remote:
-                    st.success(f"„{payload['name']}" salvat în sesiune și în Google Sheets.")
+                    st.success(f'"{name}" salvat în sesiune și în Google Sheets.')
                 else:
-                    st.success(f"„{payload['name']}" salvat în sesiunea curentă.")
+                    st.success(f'"{name}" salvat în sesiunea curentă.')
 
         local_favs = sorted(_fav_all().keys())
         lf1, lf2, lf3 = st.columns([0.6, 0.2, 0.2])
@@ -696,7 +697,7 @@ def run_streamlit_app() -> None:
                 pts.append(p)
             else:
                 txt = (st.session_state.get(f"txt_{key}") or "").strip()
-                issues.append(f"Oprirea „{txt or key}" nu a putut fi geocodată.")
+                issues.append(f'Oprirea "{txt or key}" nu a putut fi geocodată.')
 
         for msg in issues:
             st.warning(msg)
