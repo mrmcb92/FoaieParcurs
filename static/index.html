@@ -149,16 +149,19 @@
     .view { padding: 18px 16px 0; max-width: 680px; margin: 0 auto; }
 
     .card {
-      background: var(--surface);
-      backdrop-filter: blur(var(--glass-blur)) saturate(180%);
-      -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+      background: var(--surface-solid);
       border: 1px solid var(--border);
       border-radius: 18px;
       padding: 18px;
       margin-bottom: 14px;
       box-shadow: var(--shadow-sm);
       transition: all 0.2s;
+      position: relative;
     }
+    .card.has-dropdown { z-index: 100; }
+    /* Cardul care conține un dropdown deschis trece deasupra celorlalte */
+    .card:has(.candidates) { z-index: 100; }
+    .stop-item:has(.candidates) { z-index: 50; position: relative; }
 
     .card-title {
       display: flex; align-items: center; gap: 8px;
@@ -214,7 +217,7 @@
     @keyframes spin { to { transform: translateY(-50%) rotate(360deg); } }
 
     .candidates {
-      position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 200;
+      position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 1000;
       background: var(--surface-solid);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
@@ -373,9 +376,7 @@
     }
 
     .seg-card {
-      background: var(--surface);
-      backdrop-filter: blur(var(--glass-blur));
-      -webkit-backdrop-filter: blur(var(--glass-blur));
+      background: var(--surface-solid);
       border: 1px solid var(--border);
       border-radius: 18px;
       padding: 18px;
