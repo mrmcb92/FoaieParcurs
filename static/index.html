@@ -3,379 +3,595 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <meta name="theme-color" content="#1D4ED8" />
+  <meta name="theme-color" content="#6366F1" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#0F0F1A" media="(prefers-color-scheme: dark)" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <title>Foaie de parcurs</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
-    :root {
-      --primary: #2563EB;
-      --primary-dark: #1D4ED8;
-      --primary-light: #EFF6FF;
-      --primary-border: #BFDBFE;
-      --bg: #F1F5F9;
-      --surface: #FFFFFF;
-      --surface2: #F8FAFC;
-      --text: #1E293B;
-      --muted: #64748B;
-      --border: #E2E8F0;
-      --danger: #EF4444;
-      --danger-light: #FEF2F2;
-      --success: #16A34A;
-      --success-light: #F0FDF4;
-      --warning-light: #FFFBEB;
+    :root[data-theme="light"] {
+      --accent: #6366F1;
+      --accent-2: #8B5CF6;
+      --accent-soft: #EEF2FF;
+      --accent-border: #C7D2FE;
+      --accent-text: #4338CA;
+      --bg: #FAFAFC;
+      --bg-grad-1: #EEF2FF;
+      --bg-grad-2: #F5F3FF;
+      --surface: rgba(255, 255, 255, 0.7);
+      --surface-solid: #FFFFFF;
+      --surface-hover: rgba(255, 255, 255, 0.9);
+      --surface-2: #F8FAFC;
+      --text: #0F172A;
+      --text-2: #475569;
+      --text-3: #94A3B8;
+      --border: rgba(15, 23, 42, 0.08);
+      --border-2: rgba(15, 23, 42, 0.15);
+      --danger: #DC2626;
+      --danger-soft: #FEF2F2;
+      --success: #059669;
+      --success-soft: #ECFDF5;
       --warning: #D97706;
-      --radius: 14px;
-      --radius-sm: 8px;
-      --radius-xs: 6px;
-      --nav-h: 66px;
-      --header-h: 56px;
-      --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
-      --shadow: 0 2px 8px rgba(0,0,0,0.08);
+      --warning-soft: #FFFBEB;
+      --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
+      --shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+      --shadow-lg: 0 8px 32px rgba(99, 102, 241, 0.12);
+      --glass-blur: 12px;
+    }
+
+    :root[data-theme="dark"] {
+      --accent: #818CF8;
+      --accent-2: #A78BFA;
+      --accent-soft: rgba(129, 140, 248, 0.12);
+      --accent-border: rgba(129, 140, 248, 0.3);
+      --accent-text: #C7D2FE;
+      --bg: #0A0A14;
+      --bg-grad-1: #14142B;
+      --bg-grad-2: #1A1033;
+      --surface: rgba(30, 30, 50, 0.5);
+      --surface-solid: #1A1A2E;
+      --surface-hover: rgba(40, 40, 65, 0.7);
+      --surface-2: rgba(30, 30, 50, 0.4);
+      --text: #F1F5F9;
+      --text-2: #94A3B8;
+      --text-3: #64748B;
+      --border: rgba(255, 255, 255, 0.08);
+      --border-2: rgba(255, 255, 255, 0.15);
+      --danger: #F87171;
+      --danger-soft: rgba(248, 113, 113, 0.1);
+      --success: #34D399;
+      --success-soft: rgba(52, 211, 153, 0.1);
+      --warning: #FBBF24;
+      --warning-soft: rgba(251, 191, 36, 0.1);
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 8px 32px rgba(99, 102, 241, 0.25);
+      --glass-blur: 16px;
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
 
     body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
       background: var(--bg);
       color: var(--text);
       line-height: 1.5;
       min-height: 100dvh;
       -webkit-tap-highlight-color: transparent;
       overscroll-behavior: none;
+      letter-spacing: -0.01em;
+      transition: background 0.4s, color 0.3s;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(circle at 20% 0%, var(--bg-grad-1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 100%, var(--bg-grad-2) 0%, transparent 50%),
+        var(--bg);
+      z-index: -1;
+      transition: opacity 0.4s;
     }
 
     #root { display: flex; flex-direction: column; min-height: 100dvh; }
 
-    /* Header */
     .header {
       position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-      height: var(--header-h);
-      background: var(--primary);
-      display: flex; align-items: center; padding: 0 16px;
-      gap: 10px;
-    }
-    .header-icon { font-size: 20px; }
-    .header h1 { font-size: 17px; font-weight: 600; color: #fff; letter-spacing: -0.2px; }
-    .header-badge {
-      margin-left: auto;
-      font-size: 11px; font-weight: 500;
-      background: rgba(255,255,255,0.2); color: #fff;
-      padding: 3px 8px; border-radius: 20px;
+      height: 64px;
+      background: var(--surface);
+      backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+      -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; padding: 0 20px;
+      gap: 12px;
     }
 
-    /* Main content */
+    .logo-wrap { display: flex; align-items: center; gap: 10px; }
+    .logo-icon {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      color: white;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+    }
+    .logo-title { font-size: 16px; font-weight: 700; color: var(--text); letter-spacing: -0.02em; }
+    .logo-sub { font-size: 11px; color: var(--text-3); font-weight: 500; margin-top: -2px; }
+
+    .header-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+    .theme-toggle {
+      width: 38px; height: 38px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+      color: var(--text);
+    }
+    .theme-toggle:hover { background: var(--surface-hover); transform: translateY(-1px); }
+    .theme-toggle:active { transform: scale(0.95); }
+
     .main {
       flex: 1;
-      padding-top: var(--header-h);
-      padding-bottom: calc(var(--nav-h) + 8px);
+      padding-top: 64px;
+      padding-bottom: 90px;
       overflow-y: auto;
     }
+    .view { padding: 18px 16px 0; max-width: 680px; margin: 0 auto; }
 
-    .view { padding: 14px 14px 0; max-width: 640px; margin: 0 auto; }
-
-    /* Cards */
     .card {
       background: var(--surface);
-      border-radius: var(--radius);
+      backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+      -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 18px;
+      margin-bottom: 14px;
       box-shadow: var(--shadow-sm);
-      padding: 14px;
-      margin-bottom: 12px;
-    }
-    .card-title {
-      font-size: 13px; font-weight: 600; color: var(--muted);
-      text-transform: uppercase; letter-spacing: 0.5px;
-      margin-bottom: 10px;
+      transition: all 0.2s;
     }
 
-    /* Inputs */
-    .field { margin-bottom: 10px; position: relative; }
+    .card-title {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 11px; font-weight: 700; color: var(--text-2);
+      text-transform: uppercase; letter-spacing: 0.08em;
+      margin-bottom: 14px;
+    }
+    .card-title-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    }
+
+    .field { margin-bottom: 12px; position: relative; }
     .field:last-child { margin-bottom: 0; }
     .field label {
       display: block;
-      font-size: 13px; font-weight: 500; color: var(--muted);
-      margin-bottom: 5px;
+      font-size: 12px; font-weight: 600; color: var(--text-2);
+      margin-bottom: 6px;
     }
-    input[type="text"], input[type="date"], select {
-      width: 100%; height: 48px;
-      padding: 0 14px;
-      border: 1.5px solid var(--border);
-      border-radius: var(--radius-sm);
+
+    input[type="text"], input[type="date"] {
+      width: 100%; height: 50px;
+      padding: 0 16px;
+      border: 1.5px solid var(--border-2);
+      border-radius: 12px;
       font-size: 15px; color: var(--text);
-      font-family: inherit;
-      background: var(--surface);
+      font-family: inherit; font-weight: 500;
+      background: var(--surface-2);
       outline: none;
-      transition: border-color 0.15s;
+      transition: all 0.2s;
       appearance: none; -webkit-appearance: none;
     }
+
+    [data-theme="dark"] input[type="date"] { color-scheme: dark; }
+
     input[type="text"]:focus, input[type="date"]:focus {
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+      border-color: var(--accent);
+      background: var(--surface-solid);
+      box-shadow: 0 0 0 4px var(--accent-soft);
     }
-    input[type="text"]::placeholder { color: #94A3B8; }
+    input[type="text"]::placeholder { color: var(--text-3); font-weight: 400; }
     input[type="date"] { cursor: pointer; }
 
     .input-wrap { position: relative; }
     .input-spinner {
-      position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+      position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
       width: 18px; height: 18px;
-      border: 2px solid var(--border);
-      border-top-color: var(--primary);
+      border: 2.5px solid var(--border-2);
+      border-top-color: var(--accent);
       border-radius: 50%;
       animation: spin 0.7s linear infinite;
     }
     @keyframes spin { to { transform: translateY(-50%) rotate(360deg); } }
 
-    /* Autocomplete dropdown */
     .candidates {
-      position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 200;
-      background: var(--surface);
-      border: 1.5px solid var(--primary-border);
-      border-radius: var(--radius-sm);
-      box-shadow: var(--shadow);
-      max-height: 220px; overflow-y: auto;
+      position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 200;
+      background: var(--surface-solid);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1.5px solid var(--accent-border);
+      border-radius: 14px;
+      box-shadow: var(--shadow-lg);
+      max-height: 240px; overflow-y: auto;
       list-style: none;
+      padding: 6px;
     }
     .candidates li {
-      padding: 12px 14px;
+      padding: 11px 12px;
       font-size: 13.5px; color: var(--text);
       cursor: pointer;
-      border-bottom: 1px solid var(--border);
+      border-radius: 9px;
       line-height: 1.4;
+      transition: all 0.12s;
+      font-weight: 500;
     }
-    .candidates li:last-child { border-bottom: none; }
-    .candidates li:active, .candidates li:hover { background: var(--primary-light); }
+    .candidates li:active, .candidates li:hover {
+      background: var(--accent-soft);
+      color: var(--accent-text);
+    }
 
     .selected-addr {
-      margin-top: 5px;
-      padding: 7px 10px;
-      background: var(--primary-light);
-      border-radius: var(--radius-xs);
-      font-size: 12.5px; color: var(--primary-dark);
-      display: flex; align-items: flex-start; gap: 6px;
+      margin-top: 6px;
+      padding: 9px 12px;
+      background: var(--accent-soft);
+      border: 1px solid var(--accent-border);
+      border-radius: 10px;
+      font-size: 12.5px; color: var(--accent-text);
+      display: flex; align-items: flex-start; gap: 7px;
+      font-weight: 500;
     }
-    .selected-addr span { flex: 1; }
 
-    /* Stop item */
     .stop-item {
-      background: var(--surface);
-      border-radius: var(--radius-sm);
-      border: 1.5px solid var(--border);
-      padding: 12px;
-      margin-bottom: 8px;
+      background: var(--surface-2);
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      padding: 14px;
+      margin-bottom: 10px;
+      transition: all 0.2s;
     }
     .stop-header {
       display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 8px;
+      margin-bottom: 10px;
     }
-    .stop-label { font-size: 13px; font-weight: 600; color: var(--muted); }
-    .stop-actions { display: flex; gap: 4px; }
+    .stop-label {
+      font-size: 13px; font-weight: 700; color: var(--text-2);
+      display: flex; align-items: center; gap: 7px;
+    }
+    .stop-num {
+      width: 22px; height: 22px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: white;
+      border-radius: 7px;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700;
+    }
+    .stop-actions { display: flex; gap: 5px; }
 
-    /* Buttons */
     .btn {
-      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-      height: 48px; padding: 0 18px;
-      border-radius: var(--radius-sm); border: none; cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      height: 50px; padding: 0 20px;
+      border-radius: 12px; border: none; cursor: pointer;
       font-size: 15px; font-weight: 600; font-family: inherit;
-      transition: all 0.15s; user-select: none;
+      transition: all 0.2s; user-select: none;
+      letter-spacing: -0.01em;
     }
     .btn:active { transform: scale(0.97); }
-    .btn-primary { background: var(--primary); color: #fff; width: 100%; }
-    .btn-primary:hover { background: var(--primary-dark); }
-    .btn-primary:disabled { background: #93C5FD; cursor: not-allowed; transform: none; }
-    .btn-outline {
-      background: var(--surface); color: var(--primary);
-      border: 1.5px solid var(--primary-border);
-      width: 100%;
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: white; width: 100%;
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
     }
-    .btn-outline:hover { background: var(--primary-light); }
-    .btn-danger-outline {
-      background: var(--surface); color: var(--danger);
-      border: 1.5px solid #FECACA;
+    .btn-primary:hover {
+      box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45);
+      transform: translateY(-1px);
     }
-    .btn-icon {
-      width: 34px; height: 34px; padding: 0;
-      border-radius: var(--radius-xs); border: 1.5px solid var(--border);
-      background: var(--surface2); color: var(--muted);
-      font-size: 15px; cursor: pointer;
-      display: inline-flex; align-items: center; justify-content: center;
-      transition: all 0.15s;
-    }
-    .btn-icon:active { transform: scale(0.94); }
-    .btn-icon:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
-    .btn-icon.danger { border-color: #FECACA; color: var(--danger); }
-    .btn-sm {
-      height: 40px; padding: 0 14px; font-size: 14px;
+    .btn-primary:disabled {
+      background: var(--text-3); cursor: not-allowed; transform: none;
+      box-shadow: none; opacity: 0.6;
     }
 
-    /* Toggle / Checkbox */
+    .btn-outline {
+      background: var(--surface-2); color: var(--accent-text);
+      border: 1.5px solid var(--accent-border);
+      width: 100%;
+    }
+    .btn-outline:hover {
+      background: var(--accent-soft);
+      transform: translateY(-1px);
+    }
+
+    .btn-icon {
+      width: 36px; height: 36px; padding: 0;
+      border-radius: 10px; border: 1px solid var(--border-2);
+      background: var(--surface-2); color: var(--text-2);
+      cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+    }
+    .btn-icon:hover { background: var(--surface-hover); color: var(--text); }
+    .btn-icon:active { transform: scale(0.92); }
+    .btn-icon:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
+    .btn-icon.danger:hover {
+      background: var(--danger-soft);
+      color: var(--danger);
+      border-color: var(--danger);
+    }
+
+    .btn-sm { height: 42px; padding: 0 16px; font-size: 14px; }
+
     .toggle-row {
-      display: flex; align-items: center; gap: 10px;
-      padding: 10px 0; cursor: pointer; user-select: none;
+      display: flex; align-items: center; gap: 12px;
+      padding: 4px 0; cursor: pointer; user-select: none;
     }
-    .toggle {
-      position: relative; width: 44px; height: 26px; flex-shrink: 0;
-    }
+    .toggle { position: relative; width: 46px; height: 26px; flex-shrink: 0; }
     .toggle input { opacity: 0; width: 0; height: 0; }
     .toggle-track {
       position: absolute; inset: 0;
-      background: #CBD5E1; border-radius: 13px;
-      transition: background 0.2s;
+      background: var(--border-2);
+      border-radius: 13px;
+      transition: all 0.25s;
     }
-    .toggle input:checked + .toggle-track { background: var(--primary); }
+    .toggle input:checked + .toggle-track {
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    }
     .toggle-thumb {
       position: absolute; top: 3px; left: 3px;
       width: 20px; height: 20px;
-      background: #fff; border-radius: 50%;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.2);
-      transition: transform 0.2s;
+      background: white; border-radius: 50%;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+      transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    .toggle input:checked ~ .toggle-thumb { transform: translateX(18px); }
-    .toggle-label { font-size: 15px; color: var(--text); }
+    .toggle input:checked ~ .toggle-thumb { transform: translateX(20px); }
+    .toggle-label { font-size: 14.5px; color: var(--text); font-weight: 500; }
 
-    /* Number stepper */
     .stepper {
-      display: flex; align-items: center; gap: 0; border: 1.5px solid var(--border);
-      border-radius: var(--radius-xs); overflow: hidden; width: fit-content;
+      display: flex; align-items: center;
+      border: 1.5px solid var(--border-2);
+      border-radius: 10px; overflow: hidden;
+      background: var(--surface-2);
     }
     .stepper-btn {
-      width: 38px; height: 38px; border: none; background: var(--surface2);
-      color: var(--text); font-size: 18px; cursor: pointer;
+      width: 36px; height: 36px; border: none; background: transparent;
+      color: var(--text); font-size: 17px; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
-      transition: background 0.1s;
+      transition: background 0.15s; font-weight: 600;
     }
-    .stepper-btn:active { background: var(--border); }
+    .stepper-btn:active { background: var(--accent-soft); }
     .stepper-val {
-      width: 40px; text-align: center; font-size: 15px; font-weight: 600;
-      color: var(--text); border-left: 1px solid var(--border); border-right: 1px solid var(--border);
-      line-height: 38px;
+      min-width: 38px; text-align: center; font-size: 14px; font-weight: 700;
+      color: var(--text); padding: 0 4px;
     }
 
-    /* Segment card */
     .seg-card {
       background: var(--surface);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow-sm);
-      padding: 14px;
-      margin-bottom: 10px;
-    }
-    .seg-route {
-      display: flex; align-items: flex-start; gap: 8px; margin-bottom: 10px;
-    }
-    .seg-dots { display: flex; flex-direction: column; align-items: center; padding-top: 3px; gap: 3px; }
-    .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-    .dot-start { background: var(--primary); }
-    .dot-end { background: #F97316; }
-    .dot-line { width: 1.5px; height: 18px; background: var(--border); }
-    .seg-addrs { flex: 1; }
-    .seg-from { font-size: 14px; font-weight: 500; color: var(--text); line-height: 1.3; }
-    .seg-to { font-size: 14px; color: var(--muted); line-height: 1.3; margin-top: 10px; }
-    .seg-controls { display: flex; align-items: center; justify-content: space-between; }
-    .seg-km { font-size: 17px; font-weight: 700; color: var(--primary); }
-    .seg-km-sub { font-size: 12px; color: var(--muted); margin-top: 1px; }
-
-    /* Total bar */
-    .total-bar {
-      background: var(--primary);
-      border-radius: var(--radius);
-      padding: 16px 20px;
+      backdrop-filter: blur(var(--glass-blur));
+      -webkit-backdrop-filter: blur(var(--glass-blur));
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 18px;
       margin-bottom: 12px;
+      box-shadow: var(--shadow-sm);
+    }
+    .seg-route { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 14px; }
+    .seg-dots {
+      display: flex; flex-direction: column; align-items: center;
+      padding-top: 5px; gap: 4px;
+    }
+    .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .dot-start { background: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+    .dot-end { background: var(--accent-2); box-shadow: 0 0 0 3px var(--accent-soft); }
+    .dot-line {
+      width: 2px; height: 22px;
+      background: linear-gradient(var(--accent), var(--accent-2));
+      opacity: 0.4;
+    }
+    .seg-addrs { flex: 1; min-width: 0; }
+    .seg-from { font-size: 14px; font-weight: 600; color: var(--text); line-height: 1.35; word-wrap: break-word; }
+    .seg-to { font-size: 14px; color: var(--text-2); line-height: 1.35; margin-top: 14px; word-wrap: break-word; }
+    .seg-divider { height: 1px; background: var(--border); margin: 12px 0 14px; }
+    .seg-controls {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px; flex-wrap: wrap;
+    }
+    .seg-km {
+      font-size: 22px; font-weight: 700;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .seg-km-sub { font-size: 11.5px; color: var(--text-3); margin-top: 2px; font-weight: 500; }
+    .seg-opts { display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
+    .seg-opts-row { display: flex; align-items: center; gap: 8px; }
+    .seg-opts-row span { font-size: 12.5px; color: var(--text-2); font-weight: 500; }
+
+    .total-hero {
+      position: relative;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      border-radius: 20px;
+      padding: 22px 24px;
+      margin-bottom: 14px;
+      color: white;
+      overflow: hidden;
+      box-shadow: 0 12px 32px rgba(99, 102, 241, 0.35);
+    }
+    .total-hero::before {
+      content: '';
+      position: absolute;
+      top: -50%; right: -20%;
+      width: 200px; height: 200px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+      filter: blur(40px);
+    }
+    .total-hero-content {
+      position: relative;
       display: flex; align-items: center; justify-content: space-between;
     }
-    .total-label { font-size: 14px; color: rgba(255,255,255,0.8); font-weight: 500; }
-    .total-value { font-size: 28px; font-weight: 700; color: #fff; }
-    .total-unit { font-size: 16px; font-weight: 500; color: rgba(255,255,255,0.8); margin-left: 3px; }
-
-    /* Alert */
-    .alert {
-      padding: 12px 14px; border-radius: var(--radius-sm);
-      font-size: 14px; margin-bottom: 10px; line-height: 1.4;
+    .total-label {
+      font-size: 12px; color: rgba(255, 255, 255, 0.85);
+      font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;
+      margin-bottom: 4px;
     }
-    .alert-error { background: var(--danger-light); color: #B91C1C; border: 1px solid #FECACA; }
-    .alert-success { background: var(--success-light); color: #15803D; border: 1px solid #BBF7D0; }
-    .alert-info { background: var(--warning-light); color: var(--warning); border: 1px solid #FDE68A; }
+    .total-value {
+      font-size: 36px; font-weight: 700; color: white;
+      letter-spacing: -0.03em; line-height: 1;
+    }
+    .total-unit {
+      font-size: 18px; font-weight: 500; color: rgba(255, 255, 255, 0.85);
+      margin-left: 4px;
+    }
+    .total-hero-icon {
+      width: 52px; height: 52px;
+      background: rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(10px);
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+    }
 
-    /* Bottom nav */
+    .alert {
+      padding: 13px 16px; border-radius: 12px;
+      font-size: 13.5px; margin-bottom: 12px; line-height: 1.45;
+      font-weight: 500;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+    .alert-error { background: var(--danger-soft); color: var(--danger); border: 1px solid var(--danger); }
+    .alert-success { background: var(--success-soft); color: var(--success); border: 1px solid var(--success); }
+
     .bottom-nav {
       position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
-      height: var(--nav-h);
       background: var(--surface);
+      backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+      -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
       border-top: 1px solid var(--border);
       display: flex;
-      padding-bottom: env(safe-area-inset-bottom);
+      padding: 8px 12px;
+      padding-bottom: calc(8px + env(safe-area-inset-bottom));
+      gap: 4px;
     }
     .nav-tab {
       flex: 1; display: flex; flex-direction: column;
       align-items: center; justify-content: center; gap: 3px;
       cursor: pointer; border: none; background: transparent;
-      padding: 8px 0; transition: all 0.15s;
-      color: var(--muted);
+      padding: 10px 0; transition: all 0.2s;
+      color: var(--text-3);
+      border-radius: 12px;
+      font-family: inherit;
     }
-    .nav-tab.active { color: var(--primary); }
-    .nav-tab:active { background: var(--primary-light); }
-    .nav-tab .nav-icon { font-size: 22px; }
-    .nav-tab .nav-label { font-size: 11px; font-weight: 500; font-family: inherit; }
-    .nav-dot {
-      width: 5px; height: 5px; border-radius: 50%;
-      background: var(--primary); margin-top: -2px;
+    .nav-tab.active {
+      color: white;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
     }
+    .nav-tab:not(.active):hover { color: var(--text); background: var(--surface-2); }
+    .nav-tab:active { transform: scale(0.95); }
+    .nav-icon { transition: transform 0.2s; display: flex; }
+    .nav-tab.active .nav-icon { transform: scale(1.05); }
+    .nav-label { font-size: 11px; font-weight: 600; letter-spacing: -0.01em; }
 
-    /* Favorites */
     .fav-item {
-      display: flex; align-items: center; gap: 8px;
-      padding: 10px 0; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
     }
     .fav-item:last-child { border-bottom: none; }
-    .fav-name { flex: 1; font-size: 14px; font-weight: 500; }
-    .fav-stops { font-size: 12px; color: var(--muted); }
+    .fav-info { flex: 1; min-width: 0; }
+    .fav-name { font-size: 14px; font-weight: 600; color: var(--text); letter-spacing: -0.01em; }
+    .fav-stops {
+      font-size: 12px; color: var(--text-3); margin-top: 2px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
 
-    /* Divider */
-    .divider { height: 1px; background: var(--border); margin: 12px 0; }
+    .divider { height: 1px; background: var(--border); margin: 14px 0; }
 
-    /* Row layout */
-    .row { display: flex; gap: 8px; align-items: center; }
-    .row-between { display: flex; gap: 8px; align-items: center; justify-content: space-between; }
-
-    /* Loader overlay */
     .loader-overlay {
       position: fixed; inset: 0; z-index: 500;
-      background: rgba(255,255,255,0.85);
+      background: var(--surface);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
       display: flex; flex-direction: column;
-      align-items: center; justify-content: center; gap: 14px;
+      align-items: center; justify-content: center; gap: 18px;
     }
     .loader-big {
-      width: 44px; height: 44px;
-      border: 3px solid var(--border);
-      border-top-color: var(--primary);
+      width: 48px; height: 48px;
+      border: 3px solid var(--border-2);
+      border-top-color: var(--accent);
+      border-right-color: var(--accent-2);
       border-radius: 50%;
-      animation: spin 0.8s linear infinite;
+      animation: spin 0.9s linear infinite;
     }
-    .loader-text { font-size: 15px; color: var(--muted); font-weight: 500; }
+    .loader-text { font-size: 15px; color: var(--text-2); font-weight: 600; }
 
-    /* Export section */
-    .export-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .export-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
-    /* Empty state */
-    .empty-state {
-      text-align: center; padding: 40px 20px;
-      color: var(--muted);
+    .empty-state { text-align: center; padding: 50px 20px; color: var(--text-2); }
+    .empty-icon {
+      width: 72px; height: 72px;
+      margin: 0 auto 16px;
+      background: var(--accent-soft);
+      color: var(--accent-text);
+      border-radius: 20px;
+      display: flex; align-items: center; justify-content: center;
     }
-    .empty-icon { font-size: 48px; margin-bottom: 12px; }
-    .empty-title { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
-    .empty-sub { font-size: 14px; }
+    .empty-title {
+      font-size: 17px; font-weight: 700; color: var(--text);
+      margin-bottom: 6px; letter-spacing: -0.02em;
+    }
+    .empty-sub {
+      font-size: 14px; color: var(--text-2); line-height: 1.5;
+      max-width: 280px; margin: 0 auto;
+    }
+
+    .btn-add-stop {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      width: 100%; height: 44px;
+      background: transparent;
+      border: 1.5px dashed var(--accent-border);
+      border-radius: 12px;
+      color: var(--accent-text);
+      font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: all 0.2s;
+      font-family: inherit;
+      margin-top: 4px;
+    }
+    .btn-add-stop:hover { background: var(--accent-soft); border-style: solid; }
+
+    .badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 9px;
+      background: var(--success-soft);
+      color: var(--success);
+      border-radius: 20px;
+      font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .badge-dot {
+      width: 5px; height: 5px; border-radius: 50%;
+      background: var(--success);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 
     @media (min-width: 480px) {
-      .view { padding: 18px 18px 0; }
-      .card { padding: 18px; }
-      .stop-item { padding: 14px; }
+      .view { padding: 22px 20px 0; }
     }
-    @media (min-width: 640px) {
-      .bottom-nav { max-width: 640px; left: 50%; transform: translateX(-50%); border-radius: var(--radius) var(--radius) 0 0; }
+    @media (min-width: 680px) {
+      .bottom-nav {
+        max-width: 680px;
+        left: 50%; transform: translateX(-50%);
+        border-radius: 20px 20px 0 0;
+      }
     }
   </style>
 </head>
@@ -387,25 +603,23 @@
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
 <script type="text/babel">
-const { useState, useCallback, useRef, useEffect } = React;
+const { useState, useRef, useEffect } = React;
 
-// ---- Utilities ----
-function today() {
-  return new Date().toISOString().slice(0, 10);
+function getInitialTheme() {
+  const saved = localStorage.getItem('fp_theme');
+  if (saved === 'light' || saved === 'dark') return saved;
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
+
+function today() { return new Date().toISOString().slice(0, 10); }
 function fmtDate(iso) {
   if (!iso) return '';
   const [y, m, d] = iso.split('-');
   return `${d}.${m}.${y}`;
 }
-function uid() {
-  return Math.random().toString(36).slice(2, 8);
-}
-function kmRound(x) {
-  return Math.floor(x * 10 + 0.5) / 10;
-}
+function uid() { return Math.random().toString(36).slice(2, 8); }
+function kmRound(x) { return Math.floor(x * 10 + 0.5) / 10; }
 
-// ---- API ----
 async function apiGeocode(q) {
   const r = await fetch(`/api/geocode?q=${encodeURIComponent(q)}&limit=6`);
   if (!r.ok) throw new Error('Eroare geocodare');
@@ -450,8 +664,29 @@ function exportCSV(rows, dateStr) {
   URL.revokeObjectURL(url);
 }
 
-// ---- AddressInput Component ----
-function AddressInput({ label, value, display, onTextChange, onSelect, placeholder }) {
+const Icon = ({ name, size = 18 }) => {
+  const props = { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" };
+  const icons = {
+    sun: <svg {...props}><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>,
+    moon: <svg {...props}><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>,
+    map: <svg {...props}><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>,
+    list: <svg {...props}><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3" cy="6" r="1.5" fill="currentColor"/><circle cx="3" cy="12" r="1.5" fill="currentColor"/><circle cx="3" cy="18" r="1.5" fill="currentColor"/></svg>,
+    download: <svg {...props}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>,
+    pin: <svg {...props}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>,
+    arrowUp: <svg {...props} strokeWidth="2.5"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>,
+    arrowDown: <svg {...props} strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>,
+    x: <svg {...props} strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
+    plus: <svg {...props} strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
+    car: <svg {...props}><path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a1 1 0 0 0-.8-.4H5.24a2 2 0 0 0-1.8 1.1l-.8 1.63A6 6 0 0 0 2 12.42V16h2"/><circle cx="6.5" cy="16.5" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/></svg>,
+    file: <svg {...props}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>,
+    sheet: <svg {...props}><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="3" y1="9" x2="21" y2="9"/></svg>,
+    upload: <svg {...props}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>,
+    star: <svg {...props}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
+  };
+  return icons[name] || null;
+};
+
+function AddressInput({ value, display, onTextChange, onSelect, placeholder }) {
   const [candidates, setCandidates] = useState([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
@@ -495,17 +730,14 @@ function AddressInput({ label, value, display, onTextChange, onSelect, placehold
 
   return (
     <div className="field" ref={wrapRef}>
-      {label && <label>{label}</label>}
       <div className="input-wrap">
         <input
           type="text"
           value={value}
           onChange={handleChange}
           onFocus={() => candidates.length > 0 && setOpen(true)}
-          placeholder={placeholder || 'Caută adresă...'}
-          autoComplete="off"
-          autoCorrect="off"
-          spellCheck="false"
+          placeholder={placeholder}
+          autoComplete="off" autoCorrect="off" spellCheck="false"
         />
         {loading && <div className="input-spinner" />}
       </div>
@@ -520,7 +752,7 @@ function AddressInput({ label, value, display, onTextChange, onSelect, placehold
       )}
       {display && (
         <div className="selected-addr">
-          <span>📍</span>
+          <Icon name="pin" size={13} />
           <span>{display}</span>
         </div>
       )}
@@ -528,7 +760,6 @@ function AddressInput({ label, value, display, onTextChange, onSelect, placehold
   );
 }
 
-// ---- Toggle Component ----
 function Toggle({ checked, onChange, label }) {
   return (
     <label className="toggle-row">
@@ -542,7 +773,6 @@ function Toggle({ checked, onChange, label }) {
   );
 }
 
-// ---- Stepper Component ----
 function Stepper({ value, onChange, min = 1, max = 50 }) {
   return (
     <div className="stepper">
@@ -553,15 +783,10 @@ function Stepper({ value, onChange, min = 1, max = 50 }) {
   );
 }
 
-// ---- RouteView ----
 function RouteView({ date, setDate, start, setStart, stops, setStops, closeLoop, setCloseLoop, onCalculate, calculating }) {
   const newStop = () => ({ id: uid(), text: '', lat: null, lon: null, display: '' });
-
-  const updateStop = (id, patch) =>
-    setStops(prev => prev.map(s => s.id === id ? { ...s, ...patch } : s));
-
+  const updateStop = (id, patch) => setStops(prev => prev.map(s => s.id === id ? { ...s, ...patch } : s));
   const removeStop = (id) => setStops(prev => prev.filter(s => s.id !== id));
-
   const moveStop = (id, dir) => {
     setStops(prev => {
       const idx = prev.findIndex(s => s.id === id);
@@ -575,17 +800,15 @@ function RouteView({ date, setDate, start, setStart, stops, setStops, closeLoop,
 
   return (
     <div className="view">
-      {/* Data */}
       <div className="card">
-        <div className="card-title">Data foii de parcurs</div>
+        <div className="card-title"><span className="card-title-dot"/>Data foii de parcurs</div>
         <div className="field">
           <input type="date" value={date} onChange={e => setDate(e.target.value)} />
         </div>
       </div>
 
-      {/* Plecare */}
       <div className="card">
-        <div className="card-title">📍 Punct de plecare</div>
+        <div className="card-title"><span className="card-title-dot"/>Punct de plecare</div>
         <AddressInput
           value={start.text}
           display={start.display}
@@ -595,17 +818,19 @@ function RouteView({ date, setDate, start, setStart, stops, setStops, closeLoop,
         />
       </div>
 
-      {/* Opriri */}
       <div className="card">
-        <div className="card-title">🛑 Opriri ({stops.length})</div>
+        <div className="card-title"><span className="card-title-dot"/>Opriri · {stops.length}</div>
         {stops.map((s, i) => (
           <div key={s.id} className="stop-item">
             <div className="stop-header">
-              <span className="stop-label">Oprire {i + 1}</span>
+              <span className="stop-label">
+                <span className="stop-num">{i + 1}</span>
+                Oprire
+              </span>
               <div className="stop-actions">
-                <button className="btn-icon" disabled={i === 0} onClick={() => moveStop(s.id, -1)} title="Sus">↑</button>
-                <button className="btn-icon" disabled={i === stops.length - 1} onClick={() => moveStop(s.id, 1)} title="Jos">↓</button>
-                <button className="btn-icon danger" onClick={() => removeStop(s.id)} title="Șterge">✕</button>
+                <button className="btn-icon" disabled={i === 0} onClick={() => moveStop(s.id, -1)} aria-label="Sus"><Icon name="arrowUp" size={14}/></button>
+                <button className="btn-icon" disabled={i === stops.length - 1} onClick={() => moveStop(s.id, 1)} aria-label="Jos"><Icon name="arrowDown" size={14}/></button>
+                <button className="btn-icon danger" onClick={() => removeStop(s.id)} aria-label="Șterge"><Icon name="x" size={14}/></button>
               </div>
             </div>
             <AddressInput
@@ -617,39 +842,36 @@ function RouteView({ date, setDate, start, setStart, stops, setStops, closeLoop,
             />
           </div>
         ))}
-        <button className="btn btn-outline btn-sm" style={{ marginTop: 4 }} onClick={() => setStops(p => [...p, newStop()])}>
-          + Adaugă oprire
+        <button className="btn-add-stop" onClick={() => setStops(p => [...p, newStop()])}>
+          <Icon name="plus" size={16}/> Adaugă oprire
         </button>
       </div>
 
-      {/* Opțiuni */}
       <div className="card">
-        <div className="card-title">⚙️ Opțiuni</div>
+        <div className="card-title"><span className="card-title-dot"/>Opțiuni</div>
         <Toggle checked={closeLoop} onChange={setCloseLoop} label="Revenire la punctul de plecare" />
       </div>
 
-      {/* Calculează */}
-      <div style={{ marginBottom: 14 }}>
+      <div style={{ marginBottom: 16 }}>
         <button className="btn btn-primary" onClick={onCalculate} disabled={calculating}>
-          {calculating ? '⏳ Se calculează...' : '🗺️ Calculează traseul'}
+          {calculating ? 'Se calculează...' : (<><Icon name="map" size={18}/> Calculează traseul</>)}
         </button>
       </div>
     </div>
   );
 }
 
-// ---- SegmentsView ----
 function SegmentsView({ segments, segOpts, setSegOpts, onGoRoute }) {
   if (!segments.length) {
     return (
       <div className="view">
         <div className="empty-state">
-          <div className="empty-icon">🗺️</div>
+          <div className="empty-icon"><Icon name="map" size={32}/></div>
           <div className="empty-title">Niciun traseu calculat</div>
-          <div className="empty-sub">Mergi la tab-ul Traseu și apasă Calculează.</div>
-          <div style={{ marginTop: 20 }}>
-            <button className="btn btn-outline" style={{ width: 'auto', padding: '0 24px' }} onClick={onGoRoute}>
-              Mergi la Traseu →
+          <div className="empty-sub">Mergi la tab-ul Traseu și apasă Calculează pentru a vedea segmentele.</div>
+          <div style={{ marginTop: 22 }}>
+            <button className="btn btn-outline" style={{ width: 'auto', padding: '0 28px' }} onClick={onGoRoute}>
+              Mergi la Traseu
             </button>
           </div>
         </div>
@@ -657,9 +879,7 @@ function SegmentsView({ segments, segOpts, setSegOpts, onGoRoute }) {
     );
   }
 
-  const updateOpt = (i, patch) =>
-    setSegOpts(prev => prev.map((o, j) => j === i ? { ...o, ...patch } : o));
-
+  const updateOpt = (i, patch) => setSegOpts(prev => prev.map((o, j) => j === i ? { ...o, ...patch } : o));
   const total = segments.reduce((sum, seg, i) => {
     const opt = segOpts[i] || { roundTrip: false, reps: 1 };
     return sum + kmRound(seg.km_oneway * (opt.roundTrip ? 2 : 1) * opt.reps);
@@ -667,11 +887,16 @@ function SegmentsView({ segments, segOpts, setSegOpts, onGoRoute }) {
 
   return (
     <div className="view">
-      <div className="total-bar">
-        <span className="total-label">Total distanță</span>
-        <div>
-          <span className="total-value">{kmRound(total).toFixed(1)}</span>
-          <span className="total-unit">km</span>
+      <div className="total-hero">
+        <div className="total-hero-content">
+          <div>
+            <div className="total-label">Total distanță</div>
+            <div>
+              <span className="total-value">{kmRound(total).toFixed(1)}</span>
+              <span className="total-unit">km</span>
+            </div>
+          </div>
+          <div className="total-hero-icon"><Icon name="car" size={26}/></div>
         </div>
       </div>
 
@@ -691,18 +916,18 @@ function SegmentsView({ segments, segOpts, setSegOpts, onGoRoute }) {
                 <div className="seg-to">{seg.to}</div>
               </div>
             </div>
-            <div className="divider" style={{ margin: '8px 0' }} />
+            <div className="seg-divider" />
             <div className="seg-controls">
               <div>
                 <div className="seg-km">{km.toFixed(1)} km</div>
                 <div className="seg-km-sub">
-                  {seg.km_oneway} km/sens × {opt.reps} {opt.roundTrip ? '× 2 (dus-întors)' : ''}
+                  {seg.km_oneway} km × {opt.reps}{opt.roundTrip ? ' × 2 (dus-întors)' : ''}
                 </div>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-end' }}>
+              <div className="seg-opts">
                 <Toggle checked={opt.roundTrip} onChange={v => updateOpt(i, { roundTrip: v })} label="Dus-întors" />
-                <div className="row" style={{ gap: 6 }}>
-                  <span style={{ fontSize: 13, color: 'var(--muted)' }}>Înmulțiri:</span>
+                <div className="seg-opts-row">
+                  <span>×</span>
                   <Stepper value={opt.reps} onChange={v => updateOpt(i, { reps: v })} />
                 </div>
               </div>
@@ -714,8 +939,7 @@ function SegmentsView({ segments, segOpts, setSegOpts, onGoRoute }) {
   );
 }
 
-// ---- ExportView ----
-function ExportView({ segments, segOpts, date, start, stops, setStart, setStops, setSegments, setSegOpts, setDate, setTab }) {
+function ExportView({ segments, segOpts, date, start, stops, setStart, setStops, setSegments, setSegOpts, setTab }) {
   const [favName, setFavName] = useState('');
   const [favorites, setFavorites] = useState(() => {
     try { return JSON.parse(localStorage.getItem('fp_favorites') || '{}'); } catch { return {}; }
@@ -732,7 +956,6 @@ function ExportView({ segments, segOpts, date, start, stops, setStart, setStops,
     const opt = segOpts[i] || { roundTrip: false, reps: 1 };
     return sum + kmRound(seg.km_oneway * (opt.roundTrip ? 2 : 1) * opt.reps);
   }, 0);
-
   const dateStr = date.replace(/-/g, '');
 
   const buildRows = () => segments.map((seg, i) => {
@@ -751,7 +974,7 @@ function ExportView({ segments, segOpts, date, start, stops, setStart, setStops,
   const handleCSV = () => {
     if (!segments.length) return;
     exportCSV(buildRows(), dateStr);
-    setMsg('CSV descărcat!');
+    setMsg('CSV descărcat cu succes.');
     setTimeout(() => setMsg(''), 3000);
   };
 
@@ -760,7 +983,7 @@ function ExportView({ segments, segOpts, date, start, stops, setStart, setStops,
     setExporting(true);
     try {
       await apiExportExcel(buildRows(), total, dateStr);
-      setMsg('Excel descărcat!');
+      setMsg('Excel descărcat cu succes.');
       setTimeout(() => setMsg(''), 3000);
     } catch (e) {
       setMsg('Eroare: ' + e.message);
@@ -811,109 +1034,119 @@ function ExportView({ segments, segOpts, date, start, stops, setStart, setStops,
     reader.onload = (ev) => {
       try {
         const obj = JSON.parse(ev.target.result);
-        if (typeof obj === 'object') { saveFavs({ ...favorites, ...obj }); setMsg('Favorite importate!'); setTimeout(() => setMsg(''), 3000); }
-      } catch { setMsg('Fișier invalid.'); setTimeout(() => setMsg(''), 3000); }
+        if (typeof obj === 'object') {
+          saveFavs({ ...favorites, ...obj });
+          setMsg('Favorite importate cu succes.');
+          setTimeout(() => setMsg(''), 3000);
+        }
+      } catch {
+        setMsg('Fișier JSON invalid.');
+        setTimeout(() => setMsg(''), 3000);
+      }
     };
     reader.readAsText(file);
     e.target.value = '';
   };
 
-  if (!segments.length) {
-    return (
-      <div className="view">
-        <div className="empty-state">
-          <div className="empty-icon">📥</div>
-          <div className="empty-title">Nimic de exportat</div>
-          <div className="empty-sub">Calculează mai întâi un traseu.</div>
-          <div style={{ marginTop: 20 }}>
-            <button className="btn btn-outline" style={{ width: 'auto', padding: '0 24px' }} onClick={() => setTab('route')}>
-              Mergi la Traseu →
-            </button>
-          </div>
-        </div>
-        {Object.keys(favorites).length > 0 && (
-          <div className="card" style={{ marginTop: 0 }}>
-            <div className="card-title">⭐ Favorite salvate</div>
-            {Object.keys(favorites).map(name => (
-              <div key={name} className="fav-item">
-                <div>
-                  <div className="fav-name">{name}</div>
-                  <div className="fav-stops">{favorites[name].start?.display || '—'}</div>
-                </div>
-                <button className="btn btn-outline btn-sm" style={{ width: 'auto' }} onClick={() => handleLoadFav(name)}>Încarcă</button>
-                <button className="btn-icon danger" onClick={() => handleDeleteFav(name)}>✕</button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    );
-  }
+  const favList = Object.keys(favorites);
 
   return (
     <div className="view">
-      {msg && <div className={`alert ${msg.startsWith('Eroare') ? 'alert-error' : 'alert-success'}`}>{msg}</div>}
+      {msg && <div className={`alert ${msg.startsWith('Eroare') || msg.includes('invalid') ? 'alert-error' : 'alert-success'}`}>{msg}</div>}
 
-      <div className="total-bar">
-        <span className="total-label">Total km calculați</span>
-        <div>
-          <span className="total-value">{kmRound(total).toFixed(1)}</span>
-          <span className="total-unit">km</span>
-        </div>
-      </div>
+      {segments.length > 0 && (
+        <>
+          <div className="total-hero">
+            <div className="total-hero-content">
+              <div>
+                <div className="total-label">Total calculat</div>
+                <div>
+                  <span className="total-value">{kmRound(total).toFixed(1)}</span>
+                  <span className="total-unit">km</span>
+                </div>
+              </div>
+              <div className="total-hero-icon"><Icon name="download" size={24}/></div>
+            </div>
+          </div>
+
+          <div className="card">
+            <div className="card-title"><span className="card-title-dot"/>Descarcă foaia</div>
+            <div className="export-grid">
+              <button className="btn btn-outline" onClick={handleCSV}>
+                <Icon name="file" size={16}/> CSV
+              </button>
+              <button className="btn btn-outline" onClick={handleExcel} disabled={exporting}>
+                {exporting ? '...' : (<><Icon name="sheet" size={16}/> Excel</>)}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
 
       <div className="card">
-        <div className="card-title">📥 Descarcă foaia</div>
-        <div className="export-grid">
-          <button className="btn btn-outline" onClick={handleCSV}>
-            📄 CSV
-          </button>
-          <button className="btn btn-outline" onClick={handleExcel} disabled={exporting}>
-            {exporting ? '⏳...' : '📊 Excel'}
-          </button>
-        </div>
-      </div>
+        <div className="card-title"><span className="card-title-dot"/>Favorite</div>
 
-      <div className="card">
-        <div className="card-title">⭐ Favorite</div>
-        <div className="field">
-          <label>Nume traseu</label>
-          <input type="text" value={favName} onChange={e => setFavName(e.target.value)} placeholder="ex: Birou - Depozit" />
-        </div>
-        <button className="btn btn-outline btn-sm" onClick={handleSaveFav} style={{ marginBottom: 12 }}>
-          Salvează traseul curent
-        </button>
-
-        {Object.keys(favorites).length > 0 && (
+        {segments.length > 0 && (
           <>
-            <div className="divider" />
-            {Object.keys(favorites).map(name => (
+            <div className="field">
+              <label>Nume traseu</label>
+              <input type="text" value={favName} onChange={e => setFavName(e.target.value)} placeholder="ex: Birou - Depozit" />
+            </div>
+            <button className="btn btn-outline btn-sm" onClick={handleSaveFav} style={{ marginBottom: 12 }}>
+              <Icon name="star" size={14}/> Salvează traseul curent
+            </button>
+          </>
+        )}
+
+        {favList.length > 0 ? (
+          <>
+            {segments.length > 0 && <div className="divider" />}
+            {favList.map(name => (
               <div key={name} className="fav-item">
-                <div style={{ flex: 1 }}>
+                <div className="fav-info">
                   <div className="fav-name">{name}</div>
-                  <div className="fav-stops">{favorites[name].start?.display?.slice(0, 40) || '—'}</div>
+                  <div className="fav-stops">{favorites[name].start?.display?.slice(0, 50) || '—'}</div>
                 </div>
                 <button className="btn btn-outline btn-sm" style={{ width: 'auto' }} onClick={() => handleLoadFav(name)}>Încarcă</button>
-                <button className="btn-icon danger" onClick={() => handleDeleteFav(name)}>✕</button>
+                <button className="btn-icon danger" onClick={() => handleDeleteFav(name)} aria-label="Șterge"><Icon name="x" size={14}/></button>
               </div>
             ))}
             <div className="divider" />
-            <div className="export-grid" style={{ marginTop: 4 }}>
-              <button className="btn btn-outline btn-sm" onClick={handleExportFavs}>⬇ Export JSON</button>
-              <label className="btn btn-outline btn-sm" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                ⬆ Import JSON
+            <div className="export-grid">
+              <button className="btn btn-outline btn-sm" onClick={handleExportFavs}>
+                <Icon name="download" size={14}/> Export
+              </button>
+              <label className="btn btn-outline btn-sm" style={{ cursor: 'pointer' }}>
+                <Icon name="upload" size={14}/> Import
                 <input type="file" accept=".json" style={{ display: 'none' }} onChange={handleImportFavs} />
               </label>
             </div>
           </>
-        )}
+        ) : segments.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--text-3)', fontSize: 14 }}>
+            Niciun favorit salvat încă.
+          </div>
+        ) : null}
       </div>
+
+      {segments.length === 0 && favList.length === 0 && (
+        <div className="empty-state">
+          <div className="empty-icon"><Icon name="download" size={32}/></div>
+          <div className="empty-title">Nimic de exportat</div>
+          <div className="empty-sub">Calculează mai întâi un traseu pentru a putea descărca foaia de parcurs.</div>
+          <div style={{ marginTop: 22 }}>
+            <button className="btn btn-outline" style={{ width: 'auto', padding: '0 28px' }} onClick={() => setTab('route')}>
+              Mergi la Traseu
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-// ---- App ----
 function App() {
+  const [theme, setTheme] = useState(getInitialTheme);
   const [tab, setTab] = useState('route');
   const [date, setDate] = useState(today);
   const [start, setStart] = useState({ text: '', lat: null, lon: null, display: '' });
@@ -924,7 +1157,11 @@ function App() {
   const [calculating, setCalculating] = useState(false);
   const [error, setError] = useState('');
 
-  // Geocodare adresă dacă nu are lat/lon
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('fp_theme', theme);
+  }, [theme]);
+
   const resolveAddr = async (addr) => {
     if (addr.lat && addr.lon) return addr;
     if (!addr.text || addr.text.length < 3) return null;
@@ -936,51 +1173,57 @@ function App() {
   const handleCalculate = async () => {
     setError('');
     setCalculating(true);
-
     try {
       const resolvedStart = await resolveAddr(start);
       if (!resolvedStart) { setError('Punctul de plecare nu a putut fi geocodat. Selectează o adresă din lista de sugestii.'); setCalculating(false); return; }
-
       const resolvedStops = [];
       for (const s of stops) {
         const r = await resolveAddr(s);
         if (!r) { setError(`Oprirea "${s.text || '(goală)'}" nu a putut fi geocodată.`); setCalculating(false); return; }
         resolvedStops.push(r);
       }
-
-      // Actualizăm state cu adresele rezolvate
       setStart(resolvedStart);
       setStops(resolvedStops);
-
       const pts = [resolvedStart, ...resolvedStops];
       if (closeLoop) pts.push(resolvedStart);
-
       const data = await apiRoute(pts.map(p => [p.lat, p.lon]));
-
       const segs = data.legs_km.map((km, i) => ({
         from: pts[i].display,
         to: pts[i + 1].display,
         km_oneway: km,
       }));
-
       setSegments(segs);
       setSegOpts(segs.map(() => ({ roundTrip: false, reps: 1 })));
       setTab('segments');
     } catch (e) {
       setError(e.message || 'Eroare neașteptată.');
     }
-
     setCalculating(false);
   };
 
   return (
     <>
       <div className="header">
-        <span className="header-icon">🚗</span>
-        <h1>Foaie de parcurs</h1>
-        {segments.length > 0 && (
-          <span className="header-badge">Calculat</span>
-        )}
+        <div className="logo-wrap">
+          <div className="logo-icon"><Icon name="car" size={20}/></div>
+          <div>
+            <div className="logo-title">Foaie de parcurs</div>
+            <div className="logo-sub">Calcul automat km</div>
+          </div>
+        </div>
+        <div className="header-actions">
+          {segments.length > 0 && (
+            <span className="badge"><span className="badge-dot"/>Calculat</span>
+          )}
+          <button
+            className="theme-toggle"
+            onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
+            aria-label="Schimbă tema"
+            title={theme === 'dark' ? 'Mod luminos' : 'Mod întunecat'}
+          >
+            <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={17}/>
+          </button>
+        </div>
       </div>
 
       {calculating && (
@@ -992,7 +1235,7 @@ function App() {
 
       <div className="main">
         {error && (
-          <div style={{ padding: '14px 14px 0', maxWidth: 640, margin: '0 auto' }}>
+          <div style={{ padding: '18px 16px 0', maxWidth: 680, margin: '0 auto' }}>
             <div className="alert alert-error">{error}</div>
           </div>
         )}
@@ -1026,7 +1269,6 @@ function App() {
             setStops={setStops}
             setSegments={setSegments}
             setSegOpts={setSegOpts}
-            setDate={setDate}
             setTab={setTab}
           />
         )}
@@ -1034,19 +1276,16 @@ function App() {
 
       <nav className="bottom-nav">
         <button className={`nav-tab ${tab === 'route' ? 'active' : ''}`} onClick={() => setTab('route')}>
-          <span className="nav-icon">🗺️</span>
+          <span className="nav-icon"><Icon name="map" size={20}/></span>
           <span className="nav-label">Traseu</span>
-          {tab === 'route' && <div className="nav-dot" />}
         </button>
         <button className={`nav-tab ${tab === 'segments' ? 'active' : ''}`} onClick={() => setTab('segments')}>
-          <span className="nav-icon">📋</span>
+          <span className="nav-icon"><Icon name="list" size={20}/></span>
           <span className="nav-label">Segmente</span>
-          {tab === 'segments' && <div className="nav-dot" />}
         </button>
         <button className={`nav-tab ${tab === 'export' ? 'active' : ''}`} onClick={() => setTab('export')}>
-          <span className="nav-icon">📥</span>
+          <span className="nav-icon"><Icon name="download" size={20}/></span>
           <span className="nav-label">Export</span>
-          {tab === 'export' && <div className="nav-dot" />}
         </button>
       </nav>
     </>
