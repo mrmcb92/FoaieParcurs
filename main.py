@@ -200,6 +200,14 @@ async def export_excel(body: ExportRequest):
     )
 
 
+# ---- Health check (pentru UptimeRobot și alte servicii de monitoring) ----
+
+@app.get("/health")
+@app.head("/health")
+async def health():
+    return {"status": "ok"}
+
+
 # ---- Static / SPA ----
 
 INDEX_PATH = os.path.join("static", "index.html")
