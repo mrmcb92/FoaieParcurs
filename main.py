@@ -200,12 +200,27 @@ async def export_excel(body: ExportRequest):
     )
 
 
-# ---- Health check (pentru UptimeRobot și alte servicii de monitoring) ----
+# ---- Health check ----
 
 @app.get("/health")
 @app.head("/health")
 async def health():
     return {"status": "ok"}
+
+
+# ---- Service Worker (trebuie servit cu header Service-Worker-Allowed) ----
+
+from fastapi.responses import Response as FastAPIResponse
+
+@app.get("/static/sw.js")
+async def service_worker():
+    with open("static/sw.js", "r") as f:
+        content = f.read()
+    return FastAPIResponse(
+        content=content,
+        media_type="application/javascript",
+        headers={"Service-Worker-Allowed": "/"},
+    )
 
 
 # ---- Static / SPA ----
