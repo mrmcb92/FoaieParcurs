@@ -1,7 +1,7 @@
 {
-  "name": "Foaie de parcurs",
-  "short_name": "Parcurs",
-  "description": "Calcul automat km pentru foaia de parcurs",
+  "name": "TripLog",
+  "short_name": "TripLog",
+  "description": "Automatic km calculation for trip logs",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0A0A14",
@@ -21,6 +21,9 @@
       "purpose": "any maskable"
     }
   ],
-  "categories": ["productivity", "utilities"],
+  "categories": [
+    "productivity",
+    "utilities"
+  ],
   "lang": "ro"
 }
