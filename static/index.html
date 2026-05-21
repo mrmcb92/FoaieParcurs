@@ -628,6 +628,136 @@ function fmtDate(iso) {
 function uid() { return Math.random().toString(36).slice(2, 8); }
 function kmRound(x) { return Math.floor(x * 10 + 0.5) / 10; }
 
+// ---- Translations ----
+const TRANSLATIONS = {
+  en: {
+    appTitle: 'Trip Log',
+    appSub: 'Automatic km calculation',
+    tabRoute: 'Route',
+    tabSegments: 'Segments',
+    tabExport: 'Export',
+    sectionDate: 'Trip log date',
+    sectionStart: 'Starting point',
+    sectionStops: 'Stops',
+    sectionOptions: 'Options',
+    sectionSegments: 'Segments',
+    sectionDownload: 'Download log',
+    sectionFavorites: 'Favorites',
+    optionReturn: 'Return to starting point',
+    btnCalculate: 'Calculate route',
+    btnCalculating: 'Calculating...',
+    btnAddStop: 'Add stop',
+    stopLabel: 'Stop',
+    placeholderStart: 'Search departure address...',
+    placeholderStop: 'Search stop address...',
+    placeholderFavName: 'e.g. Office - Warehouse',
+    labelFavName: 'Route name',
+    btnSaveFav: 'Save current route',
+    btnLoad: 'Load',
+    btnExportFav: 'Export',
+    btnImportFav: 'Import',
+    totalDistance: 'Total distance',
+    totalCalculated: 'Total calculated',
+    roundTrip: 'Round trip',
+    multiplier: '×',
+    btnCSV: 'CSV',
+    btnExcel: 'Excel',
+    emptySegmentsTitle: 'No route calculated',
+    emptySegmentsSub: 'Go to the Route tab and press Calculate to see segments.',
+    emptyExportTitle: 'Nothing to export',
+    emptyExportSub: 'Calculate a route first to download the trip log.',
+    goToRoute: 'Go to Route',
+    noFavorites: 'No favorites saved yet.',
+    badgeCalculated: 'Calculated',
+    msgCSV: 'CSV downloaded successfully.',
+    msgExcel: 'Excel downloaded successfully.',
+    msgFavSaved: (name) => `Favorite "${name}" saved.`,
+    msgImported: 'Favorites imported successfully.',
+    msgInvalidFile: 'Invalid JSON file.',
+    errNoStart: 'The starting point could not be geocoded. Please select an address from the suggestions.',
+    errNoStop: (txt) => `Stop "${txt}" could not be geocoded.`,
+    errUnexpected: 'Unexpected error.',
+    loaderText: 'Calculating route...',
+    colDate: 'Date',
+    colFrom: 'Departure',
+    colTo: 'Destination',
+    colRoundTrip: 'Round trip',
+    colReps: 'Multiplier (×)',
+    colKm: 'Km travelled',
+    colTotal: 'Total KM',
+    yes: 'Yes',
+    no: 'No',
+    themeLight: 'Light mode',
+    themeDark: 'Dark mode',
+  },
+  ro: {
+    appTitle: 'Foaie de parcurs',
+    appSub: 'Calcul automat km',
+    tabRoute: 'Traseu',
+    tabSegments: 'Segmente',
+    tabExport: 'Export',
+    sectionDate: 'Data foii de parcurs',
+    sectionStart: 'Punct de plecare',
+    sectionStops: 'Opriri',
+    sectionOptions: 'Opțiuni',
+    sectionSegments: 'Segmente',
+    sectionDownload: 'Descarcă foaia',
+    sectionFavorites: 'Favorite',
+    optionReturn: 'Revenire la punctul de plecare',
+    btnCalculate: 'Calculează traseul',
+    btnCalculating: 'Se calculează...',
+    btnAddStop: 'Adaugă oprire',
+    stopLabel: 'Oprire',
+    placeholderStart: 'Caută adresa de plecare...',
+    placeholderStop: 'Caută adresa opririi...',
+    placeholderFavName: 'ex: Birou - Depozit',
+    labelFavName: 'Nume traseu',
+    btnSaveFav: 'Salvează traseul curent',
+    btnLoad: 'Încarcă',
+    btnExportFav: 'Export',
+    btnImportFav: 'Import',
+    totalDistance: 'Total distanță',
+    totalCalculated: 'Total calculat',
+    roundTrip: 'Dus-întors',
+    multiplier: '×',
+    btnCSV: 'CSV',
+    btnExcel: 'Excel',
+    emptySegmentsTitle: 'Niciun traseu calculat',
+    emptySegmentsSub: 'Mergi la tab-ul Traseu și apasă Calculează pentru a vedea segmentele.',
+    emptyExportTitle: 'Nimic de exportat',
+    emptyExportSub: 'Calculează mai întâi un traseu pentru a putea descărca foaia de parcurs.',
+    goToRoute: 'Mergi la Traseu',
+    noFavorites: 'Niciun favorit salvat încă.',
+    badgeCalculated: 'Calculat',
+    msgCSV: 'CSV descărcat cu succes.',
+    msgExcel: 'Excel descărcat cu succes.',
+    msgFavSaved: (name) => `Favorit "${name}" salvat.`,
+    msgImported: 'Favorite importate cu succes.',
+    msgInvalidFile: 'Fișier JSON invalid.',
+    errNoStart: 'Punctul de plecare nu a putut fi geocodat. Selectează o adresă din lista de sugestii.',
+    errNoStop: (txt) => `Oprirea "${txt}" nu a putut fi geocodată.`,
+    errUnexpected: 'Eroare neașteptată.',
+    loaderText: 'Se calculează traseul...',
+    colDate: 'Data',
+    colFrom: 'Plecare',
+    colTo: 'Destinație',
+    colRoundTrip: 'Dus-întors',
+    colReps: 'Înmulțiri (×)',
+    colKm: 'Km parcurși',
+    colTotal: 'KM totali',
+    yes: 'Da',
+    no: 'Nu',
+    themeLight: 'Mod luminos',
+    themeDark: 'Mod întunecat',
+  },
+};
+
+function getInitialLang() {
+  const saved = localStorage.getItem('fp_lang');
+  if (saved === 'en' || saved === 'ro') return saved;
+  return 'en';
+}
+
 async function apiGeocode(q) {
   const r = await fetch(`/api/geocode?q=${encodeURIComponent(q)}&limit=6`);
   if (!r.ok) throw new Error('Eroare geocodare');
@@ -652,7 +782,7 @@ async function apiExportExcel(rows, total, dateStr) {
   const r = await fetch('/api/export/excel', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ rows, total, date_str: dateStr }),
+    body: JSON.stringify({ rows, total, date_str: dateStr, total_col_label: t.colTotal }),
   });
   if (!r.ok) throw new Error('Eroare export Excel');
   const blob = await r.blob();
@@ -791,7 +921,7 @@ function Stepper({ value, onChange, min = 1, max = 50 }) {
   );
 }
 
-function RouteView({ date, setDate, start, setStart, stops, setStops, closeLoop, setCloseLoop, onCalculate, calculating }) {
+function RouteView({ date, setDate, start, setStart, stops, setStops, closeLoop, setCloseLoop, onCalculate, calculating, t }) {
   const newStop = () => ({ id: uid(), text: '', lat: null, lon: null, display: '' });
   const updateStop = (id, patch) => setStops(prev => prev.map(s => s.id === id ? { ...s, ...patch } : s));
   const removeStop = (id) => setStops(prev => prev.filter(s => s.id !== id));
@@ -809,31 +939,31 @@ function RouteView({ date, setDate, start, setStart, stops, setStops, closeLoop,
   return (
     <div className="view">
       <div className="card">
-        <div className="card-title"><span className="card-title-dot"/>Data foii de parcurs</div>
+        <div className="card-title"><span className="card-title-dot"/>{t.sectionDate}</div>
         <div className="field">
           <input type="date" value={date} onChange={e => setDate(e.target.value)} />
         </div>
       </div>
 
       <div className="card">
-        <div className="card-title"><span className="card-title-dot"/>Punct de plecare</div>
+        <div className="card-title"><span className="card-title-dot"/>{t.sectionStart}</div>
         <AddressInput
           value={start.text}
           display={start.display}
           onTextChange={v => setStart(p => ({ ...p, text: v, lat: null, lon: null, display: '' }))}
           onSelect={c => setStart({ text: c.display, lat: c.lat, lon: c.lon, display: c.display })}
-          placeholder="Caută adresa de plecare..."
+          placeholder={t.placeholderStart}
         />
       </div>
 
       <div className="card">
-        <div className="card-title"><span className="card-title-dot"/>Opriri · {stops.length}</div>
+        <div className="card-title"><span className="card-title-dot"/>{t.sectionStops} · {stops.length}</div>
         {stops.map((s, i) => (
           <div key={s.id} className="stop-item">
             <div className="stop-header">
               <span className="stop-label">
                 <span className="stop-num">{i + 1}</span>
-                Oprire
+                {t.stopLabel}
               </span>
               <div className="stop-actions">
                 <button className="btn-icon" disabled={i === 0} onClick={() => moveStop(s.id, -1)} aria-label="Sus"><Icon name="arrowUp" size={14}/></button>
@@ -846,40 +976,40 @@ function RouteView({ date, setDate, start, setStart, stops, setStops, closeLoop,
               display={s.display}
               onTextChange={v => updateStop(s.id, { text: v, lat: null, lon: null, display: '' })}
               onSelect={c => updateStop(s.id, { text: c.display, lat: c.lat, lon: c.lon, display: c.display })}
-              placeholder="Caută adresa opririi..."
+              placeholder={t.placeholderStop}
             />
           </div>
         ))}
         <button className="btn-add-stop" onClick={() => setStops(p => [...p, newStop()])}>
-          <Icon name="plus" size={16}/> Adaugă oprire
+          <Icon name="plus" size={16}/> {t.btnAddStop}
         </button>
       </div>
 
       <div className="card">
-        <div className="card-title"><span className="card-title-dot"/>Opțiuni</div>
-        <Toggle checked={closeLoop} onChange={setCloseLoop} label="Revenire la punctul de plecare" />
+        <div className="card-title"><span className="card-title-dot"/>{t.sectionOptions}</div>
+        <Toggle checked={closeLoop} onChange={setCloseLoop} label={t.optionReturn} />
       </div>
 
       <div style={{ marginBottom: 16 }}>
         <button className="btn btn-primary" onClick={onCalculate} disabled={calculating}>
-          {calculating ? 'Se calculează...' : (<><Icon name="map" size={18}/> Calculează traseul</>)}
+          {calculating ? t.btnCalculating : (<><Icon name="map" size={18}/> {t.btnCalculate}</>)}
         </button>
       </div>
     </div>
   );
 }
 
-function SegmentsView({ segments, segOpts, setSegOpts, onGoRoute }) {
+function SegmentsView({ segments, segOpts, setSegOpts, onGoRoute, t }) {
   if (!segments.length) {
     return (
       <div className="view">
         <div className="empty-state">
           <div className="empty-icon"><Icon name="map" size={32}/></div>
-          <div className="empty-title">Niciun traseu calculat</div>
-          <div className="empty-sub">Mergi la tab-ul Traseu și apasă Calculează pentru a vedea segmentele.</div>
+          <div className="empty-title">{t.emptySegmentsTitle}</div>
+          <div className="empty-sub">{t.emptySegmentsSub}</div>
           <div style={{ marginTop: 22 }}>
             <button className="btn btn-outline" style={{ width: 'auto', padding: '0 28px' }} onClick={onGoRoute}>
-              Mergi la Traseu
+              {t.goToRoute}
             </button>
           </div>
         </div>
@@ -898,7 +1028,7 @@ function SegmentsView({ segments, segOpts, setSegOpts, onGoRoute }) {
       <div className="total-hero">
         <div className="total-hero-content">
           <div>
-            <div className="total-label">Total distanță</div>
+            <div className="total-label">{t.totalDistance}</div>
             <div>
               <span className="total-value">{kmRound(total).toFixed(1)}</span>
               <span className="total-unit">km</span>
@@ -929,13 +1059,13 @@ function SegmentsView({ segments, segOpts, setSegOpts, onGoRoute }) {
               <div>
                 <div className="seg-km">{km.toFixed(1)} km</div>
                 <div className="seg-km-sub">
-                  {seg.km_oneway} km × {opt.reps}{opt.roundTrip ? ' × 2 (dus-întors)' : ''}
+                  {seg.km_oneway} km × {opt.reps}{opt.roundTrip ? ` × 2 (${t.roundTrip.toLowerCase()})` : ''}
                 </div>
               </div>
               <div className="seg-opts">
-                <Toggle checked={opt.roundTrip} onChange={v => updateOpt(i, { roundTrip: v })} label="Dus-întors" />
+                <Toggle checked={opt.roundTrip} onChange={v => updateOpt(i, { roundTrip: v })} label={t.roundTrip} />
                 <div className="seg-opts-row">
-                  <span>×</span>
+                  <span>{t.multiplier}</span>
                   <Stepper value={opt.reps} onChange={v => updateOpt(i, { reps: v })} />
                 </div>
               </div>
@@ -947,7 +1077,7 @@ function SegmentsView({ segments, segOpts, setSegOpts, onGoRoute }) {
   );
 }
 
-function ExportView({ segments, segOpts, date, start, stops, setStart, setStops, setSegments, setSegOpts, setTab }) {
+function ExportView({ segments, segOpts, date, start, stops, setStart, setStops, setSegments, setSegOpts, setTab, t }) {
   const [favName, setFavName] = useState('');
   const [favorites, setFavorites] = useState(() => {
     try { return JSON.parse(localStorage.getItem('fp_favorites') || '{}'); } catch { return {}; }
@@ -970,19 +1100,19 @@ function ExportView({ segments, segOpts, date, start, stops, setStart, setStops,
     const opt = segOpts[i] || { roundTrip: false, reps: 1 };
     const km = kmRound(seg.km_oneway * (opt.roundTrip ? 2 : 1) * opt.reps);
     return {
-      'Data': fmtDate(date),
-      'Plecare': seg.from,
-      'Destinație': seg.to,
-      'Dus-întors': opt.roundTrip ? 'Da' : 'Nu',
-      'Înmulțiri (×)': opt.reps,
-      'Km parcurși': km,
+      [t.colDate]: fmtDate(date),
+      [t.colFrom]: seg.from,
+      [t.colTo]: seg.to,
+      [t.colRoundTrip]: opt.roundTrip ? t.yes : t.no,
+      [t.colReps]: opt.reps,
+      [t.colKm]: km,
     };
   });
 
   const handleCSV = () => {
     if (!segments.length) return;
     exportCSV(buildRows(), dateStr);
-    setMsg('CSV descărcat cu succes.');
+    setMsg(t.msgCSV);
     setTimeout(() => setMsg(''), 3000);
   };
 
@@ -991,7 +1121,7 @@ function ExportView({ segments, segOpts, date, start, stops, setStart, setStops,
     setExporting(true);
     try {
       await apiExportExcel(buildRows(), total, dateStr);
-      setMsg('Excel descărcat cu succes.');
+      setMsg(t.msgExcel);
       setTimeout(() => setMsg(''), 3000);
     } catch (e) {
       setMsg('Eroare: ' + e.message);
@@ -1007,7 +1137,7 @@ function ExportView({ segments, segOpts, date, start, stops, setStart, setStops,
     };
     saveFavs({ ...favorites, [name]: payload });
     setFavName('');
-    setMsg(`Favorit "${name}" salvat.`);
+    setMsg(t.msgFavSaved(name));
     setTimeout(() => setMsg(''), 3000);
   };
 
@@ -1044,11 +1174,11 @@ function ExportView({ segments, segOpts, date, start, stops, setStart, setStops,
         const obj = JSON.parse(ev.target.result);
         if (typeof obj === 'object') {
           saveFavs({ ...favorites, ...obj });
-          setMsg('Favorite importate cu succes.');
+          setMsg(t.msgImported);
           setTimeout(() => setMsg(''), 3000);
         }
       } catch {
-        setMsg('Fișier JSON invalid.');
+        setMsg(t.msgInvalidFile);
         setTimeout(() => setMsg(''), 3000);
       }
     };
@@ -1067,7 +1197,7 @@ function ExportView({ segments, segOpts, date, start, stops, setStart, setStops,
           <div className="total-hero">
             <div className="total-hero-content">
               <div>
-                <div className="total-label">Total calculat</div>
+                <div className="total-label">{t.totalCalculated}</div>
                 <div>
                   <span className="total-value">{kmRound(total).toFixed(1)}</span>
                   <span className="total-unit">km</span>
@@ -1078,13 +1208,13 @@ function ExportView({ segments, segOpts, date, start, stops, setStart, setStops,
           </div>
 
           <div className="card">
-            <div className="card-title"><span className="card-title-dot"/>Descarcă foaia</div>
+            <div className="card-title"><span className="card-title-dot"/>{t.sectionDownload}</div>
             <div className="export-grid">
               <button className="btn btn-outline" onClick={handleCSV}>
-                <Icon name="file" size={16}/> CSV
+                <Icon name="file" size={16}/> {t.btnCSV}
               </button>
               <button className="btn btn-outline" onClick={handleExcel} disabled={exporting}>
-                {exporting ? '...' : (<><Icon name="sheet" size={16}/> Excel</>)}
+                {exporting ? '...' : (<><Icon name="sheet" size={16}/> {t.btnExcel}</>)}
               </button>
             </div>
           </div>
@@ -1092,16 +1222,16 @@ function ExportView({ segments, segOpts, date, start, stops, setStart, setStops,
       )}
 
       <div className="card">
-        <div className="card-title"><span className="card-title-dot"/>Favorite</div>
+        <div className="card-title"><span className="card-title-dot"/>{t.sectionFavorites}</div>
 
         {segments.length > 0 && (
           <>
             <div className="field">
-              <label>Nume traseu</label>
-              <input type="text" value={favName} onChange={e => setFavName(e.target.value)} placeholder="ex: Birou - Depozit" />
+              <label>{t.labelFavName}</label>
+              <input type="text" value={favName} onChange={e => setFavName(e.target.value)} placeholder={t.placeholderFavName} />
             </div>
             <button className="btn btn-outline btn-sm" onClick={handleSaveFav} style={{ marginBottom: 12 }}>
-              <Icon name="star" size={14}/> Salvează traseul curent
+              <Icon name="star" size={14}/> {t.btnSaveFav}
             </button>
           </>
         )}
@@ -1115,24 +1245,24 @@ function ExportView({ segments, segOpts, date, start, stops, setStart, setStops,
                   <div className="fav-name">{name}</div>
                   <div className="fav-stops">{favorites[name].start?.display?.slice(0, 50) || '—'}</div>
                 </div>
-                <button className="btn btn-outline btn-sm" style={{ width: 'auto' }} onClick={() => handleLoadFav(name)}>Încarcă</button>
+                <button className="btn btn-outline btn-sm" style={{ width: 'auto' }} onClick={() => handleLoadFav(name)}>{t.btnLoad}</button>
                 <button className="btn-icon danger" onClick={() => handleDeleteFav(name)} aria-label="Șterge"><Icon name="x" size={14}/></button>
               </div>
             ))}
             <div className="divider" />
             <div className="export-grid">
               <button className="btn btn-outline btn-sm" onClick={handleExportFavs}>
-                <Icon name="download" size={14}/> Export
+                <Icon name="download" size={14}/> {t.btnExportFav}
               </button>
               <label className="btn btn-outline btn-sm" style={{ cursor: 'pointer' }}>
-                <Icon name="upload" size={14}/> Import
+                <Icon name="upload" size={14}/> {t.btnImportFav}
                 <input type="file" accept=".json" style={{ display: 'none' }} onChange={handleImportFavs} />
               </label>
             </div>
           </>
         ) : segments.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--text-3)', fontSize: 14 }}>
-            Niciun favorit salvat încă.
+            {t.noFavorites}
           </div>
         ) : null}
       </div>
@@ -1140,11 +1270,11 @@ function ExportView({ segments, segOpts, date, start, stops, setStart, setStops,
       {segments.length === 0 && favList.length === 0 && (
         <div className="empty-state">
           <div className="empty-icon"><Icon name="download" size={32}/></div>
-          <div className="empty-title">Nimic de exportat</div>
-          <div className="empty-sub">Calculează mai întâi un traseu pentru a putea descărca foaia de parcurs.</div>
+          <div className="empty-title">{t.emptyExportTitle}</div>
+          <div className="empty-sub">{t.emptyExportSub}</div>
           <div style={{ marginTop: 22 }}>
             <button className="btn btn-outline" style={{ width: 'auto', padding: '0 28px' }} onClick={() => setTab('route')}>
-              Mergi la Traseu
+              {t.goToRoute}
             </button>
           </div>
         </div>
@@ -1155,6 +1285,13 @@ function ExportView({ segments, segOpts, date, start, stops, setStart, setStops,
 
 function App() {
   const [theme, setTheme] = useState(getInitialTheme);
+  const [lang, setLang] = useState(getInitialLang);
+  const t = TRANSLATIONS[lang];
+  const toggleLang = () => {
+    const next = lang === 'en' ? 'ro' : 'en';
+    setLang(next);
+    localStorage.setItem('fp_lang', next);
+  };
   const [tab, setTab] = useState('route');
   const [date, setDate] = useState(today);
   const [start, setStart] = useState({ text: '', lat: null, lon: null, display: '' });
@@ -1183,11 +1320,11 @@ function App() {
     setCalculating(true);
     try {
       const resolvedStart = await resolveAddr(start);
-      if (!resolvedStart) { setError('Punctul de plecare nu a putut fi geocodat. Selectează o adresă din lista de sugestii.'); setCalculating(false); return; }
+      if (!resolvedStart) { setError(t.errNoStart); setCalculating(false); return; }
       const resolvedStops = [];
       for (const s of stops) {
         const r = await resolveAddr(s);
-        if (!r) { setError(`Oprirea "${s.text || '(goală)'}" nu a putut fi geocodată.`); setCalculating(false); return; }
+        if (!r) { setError(t.errNoStop(s.text || '?')); setCalculating(false); return; }
         resolvedStops.push(r);
       }
       setStart(resolvedStart);
@@ -1204,7 +1341,7 @@ function App() {
       setSegOpts(segs.map(() => ({ roundTrip: false, reps: 1 })));
       setTab('segments');
     } catch (e) {
-      setError(e.message || 'Eroare neașteptată.');
+      setError(e.message || t.errUnexpected);
     }
     setCalculating(false);
   };
@@ -1215,19 +1352,28 @@ function App() {
         <div className="logo-wrap">
           <div className="logo-icon"><Icon name="car" size={20}/></div>
           <div>
-            <div className="logo-title">Foaie de parcurs</div>
-            <div className="logo-sub">Calcul automat km</div>
+            <div className="logo-title">{t.appTitle}</div>
+            <div className="logo-sub">{t.appSub}</div>
           </div>
         </div>
         <div className="header-actions">
           {segments.length > 0 && (
-            <span className="badge"><span className="badge-dot"/>Calculat</span>
+            <span className="badge"><span className="badge-dot"/>{t.badgeCalculated}</span>
           )}
           <button
             className="theme-toggle"
-            onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
-            aria-label="Schimbă tema"
-            title={theme === 'dark' ? 'Mod luminos' : 'Mod întunecat'}
+            onClick={toggleLang}
+            aria-label="Switch language"
+            title={lang === 'en' ? 'Switch to Romanian' : 'Switch to English'}
+            style={{ fontSize: 12, fontWeight: 700, letterSpacing: 0.5, width: 'auto', padding: '0 10px', minWidth: 38 }}
+          >
+            {lang === 'en' ? 'RO' : 'EN'}
+          </button>
+          <button
+            className="theme-toggle"
+            onClick={() => setTheme(th => th === 'dark' ? 'light' : 'dark')}
+            aria-label="Toggle theme"
+            title={theme === 'dark' ? t.themeLight : t.themeDark}
           >
             <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={17}/>
           </button>
@@ -1237,7 +1383,7 @@ function App() {
       {calculating && (
         <div className="loader-overlay">
           <div className="loader-big" />
-          <div className="loader-text">Se calculează traseul...</div>
+          <div className="loader-text">{t.loaderText}</div>
         </div>
       )}
 
@@ -1256,6 +1402,7 @@ function App() {
             closeLoop={closeLoop} setCloseLoop={setCloseLoop}
             onCalculate={handleCalculate}
             calculating={calculating}
+            t={t}
           />
         )}
         {tab === 'segments' && (
@@ -1264,6 +1411,7 @@ function App() {
             segOpts={segOpts}
             setSegOpts={setSegOpts}
             onGoRoute={() => setTab('route')}
+            t={t}
           />
         )}
         {tab === 'export' && (
@@ -1278,6 +1426,7 @@ function App() {
             setSegments={setSegments}
             setSegOpts={setSegOpts}
             setTab={setTab}
+            t={t}
           />
         )}
       </div>
@@ -1285,15 +1434,15 @@ function App() {
       <nav className="bottom-nav">
         <button className={`nav-tab ${tab === 'route' ? 'active' : ''}`} onClick={() => setTab('route')}>
           <span className="nav-icon"><Icon name="map" size={20}/></span>
-          <span className="nav-label">Traseu</span>
+          <span className="nav-label">{t.tabRoute}</span>
         </button>
         <button className={`nav-tab ${tab === 'segments' ? 'active' : ''}`} onClick={() => setTab('segments')}>
           <span className="nav-icon"><Icon name="list" size={20}/></span>
-          <span className="nav-label">Segmente</span>
+          <span className="nav-label">{t.tabSegments}</span>
         </button>
         <button className={`nav-tab ${tab === 'export' ? 'active' : ''}`} onClick={() => setTab('export')}>
           <span className="nav-icon"><Icon name="download" size={20}/></span>
-          <span className="nav-label">Export</span>
+          <span className="nav-label">{t.tabExport}</span>
         </button>
       </nav>
     </>

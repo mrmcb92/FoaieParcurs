@@ -167,6 +167,7 @@ class ExportRequest(BaseModel):
     rows: List[Dict]
     total: float
     date_str: str
+    total_col_label: str = "Total KM"
 
 
 @app.post("/api/export/excel")
@@ -183,7 +184,7 @@ async def export_excel(body: ExportRequest):
             for i, col in enumerate(df.columns, 1):
                 ws.cell(1, i, col).font = Font(bold=True)
             tc = df.shape[1] + 1
-            ws.cell(1, tc, "KM totali").font = Font(bold=True)
+            ws.cell(1, tc, body.total_col_label).font = Font(bold=True)
             ws.cell(2, tc, float(body.total)).font = Font(bold=True)
             ws.cell(2, tc).number_format = "0.0"
             ws.column_dimensions[get_column_letter(tc)].width = 15
