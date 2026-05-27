@@ -293,6 +293,7 @@ const TRANSLATIONS = {
     historyFilterMonth:'Filter by month', btnMonthlyReport:'Export monthly Excel',
     allMonths:'All months', selectMonth:'Select month',
     btnShareRoute:'Share', msgLinkCopied:'Link copied!',
+    btnNewRoute:'New route',
     mapNoRoute:'Calculate a route first to see it on the map.',
     deleteConfirm:'Delete?',
     driver:'Driver',
@@ -342,6 +343,7 @@ const TRANSLATIONS = {
     historyFilterMonth:'Filtrează pe lună', btnMonthlyReport:'Export Excel lunar',
     allMonths:'Toate lunile', selectMonth:'Selectează luna',
     btnShareRoute:'Partajează', msgLinkCopied:'Link copiat!',
+    btnNewRoute:'Traseu nou',
     mapNoRoute:'Calculează un traseu pentru a-l vedea pe hartă.',
     deleteConfirm:'Ștergi?',
     driver:'Șofer',
@@ -409,6 +411,7 @@ const Icon=({name,size=18})=>{const p={width:size,height:size,viewBox:"0 0 24 24
   chevronUp:<svg {...p}><polyline points="18 15 12 9 6 15"/></svg>,
   trash:<svg {...p}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>,
   settings:<svg {...p}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
+  newRoute:<svg {...p}><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>,
 };return icons[name]||null};
 
 // ── AddressInput ──────────────────────────────────────────────────────────────
@@ -1089,6 +1092,17 @@ function App(){
     setCalculating(false);
   };
 
+  const handleReset=()=>{
+    setStart({text:'',lat:null,lon:null,display:''});
+    setStops([{id:uid(),text:'',lat:null,lon:null,display:''}]);
+    setCloseLoop(false);
+    setOdoStart('');setOdoEnd('');
+    setSegments([]);setSegOpts([]);setCoords([]);
+    setError('');setFlashMsg('');
+    setDate(today());
+    setTab('route');
+  };
+
   const handleSaveHistory=()=>{
     const vehicle=vehicles.find(v=>v.id===selectedVehicleId)||null;
     const total=segments.reduce((sum,seg,i)=>{const opt=segOpts[i]||{roundTrip:false,reps:1};return sum+kmRound(seg.km_oneway*(opt.roundTrip?2:1)*opt.reps)},0);
@@ -1124,6 +1138,7 @@ function App(){
         </div>
         <div className="header-actions">
           {segments.length>0&&<span className="badge"><span className="badge-dot"/>Calculat</span>}
+          <button className="theme-toggle" onClick={handleReset} title={t.btnNewRoute} style={{color:'var(--accent)'}}><Icon name="newRoute" size={17}/></button>
           <button className="theme-toggle" onClick={()=>setShowVehicleModal(true)} title={t.vehiclesTitle}><Icon name="settings" size={17}/></button>
           <button className="theme-toggle" onClick={toggleLang} style={{fontSize:12,fontWeight:700,width:'auto',padding:'0 10px',minWidth:38}}>{lang==='en'?'RO':'EN'}</button>
           <button className="theme-toggle" onClick={()=>setTheme(th=>th==='dark'?'light':'dark')} title={theme==='dark'?t.themeLight:t.themeDark}><Icon name={theme==='dark'?'sun':'moon'} size={17}/></button>
